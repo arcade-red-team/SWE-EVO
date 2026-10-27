@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Read-only checks for the published SWE-EVO OpenHands workflow."""
+"""Read-only preliminary checks for the Codex SWE-EVO experiment."""
 
+import argparse
 import json
 import subprocess
 from pathlib import Path
@@ -18,25 +19,21 @@ def command(args: list[str], root: Path) -> tuple[bool, str]:
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return False, str(exc)
-    return result.returncode == 0, result.stdout.strip()
+    return result.returncode == 0, (result.stdout or result.stderr).strip()
 
 
-def check(root: Path) -> list[tuple[str, bool, str]]:
+def check(root: Path, inputs: Path | None = None) -> list[tuple[str, bool, str]]:
     results = []
-    inference = root / "OpenHands/evaluation/benchmarks/swe_bench/scripts/run_infer.sh"
-    results.append(("OpenHands inference script", inference.is_file(), str(inference)))
-
-    dataset = root / "hf_out/hf_jsonl"
-    dataset_files = (
-        [path for path in dataset.rglob("*.jsonl") if path.is_file() and path.stat().st_size]
-        if dataset.is_dir() else []
-    )
-    results.append(("OpenHands JSONL dataset", bool(dataset_files), str(dataset)))
+    codex_ok, version = command(["codex", "--version"], root)
+    results.append(("Codex CLI installed", codex_ok, version if codex_ok else "unavailable"))
+    login_ok, login = command(["codex", "login", "status"], root)
+    results.append(("Codex ChatGPT login", login_ok and "Logged in using ChatGPT" in login,
+                    "ChatGPT login detected" if login_ok and "Logged in using ChatGPT" in login
+                    else "not verified"))
 
     evaluator = root / "SWE-bench/evaluate_instance.py"
     results.append(("SWE-EVO evaluator", evaluator.is_file(), str(evaluator)))
-    inputs = root / "output_final"
-    files = sorted(inputs.glob("*.json")) if inputs.is_dir() else []
+    files = sorted(inputs.glob("*.json")) if inputs and inputs.is_dir() else []
     ids = set()
     invalid = 0
     for path in files:
@@ -51,7 +48,7 @@ def check(root: Path) -> list[tuple[str, bool, str]]:
     inputs_ok = len(files) == EXPECTED_INSTANCES and len(ids) == EXPECTED_INSTANCES and not invalid
     results.append((
         "Evaluator instance JSON count and unique IDs", inputs_ok,
-        f"{inputs}: {len(files)} files, {len(ids)} unique IDs, {invalid} invalid; "
+        f"{inputs or 'not provided'}: {len(files)} files, {len(ids)} unique IDs, {invalid} invalid; "
         f"expected {EXPECTED_INSTANCES}",
     ))
 
@@ -69,11 +66,15 @@ def check(root: Path) -> list[tuple[str, bool, str]]:
 
 
 def main() -> int:
-    results = check(ROOT)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--evaluator-inputs", type=Path,
+                        help="evaluator-only directory, inaccessible to the agent")
+    args = parser.parse_args()
+    results = check(ROOT, args.evaluator_inputs)
     for label, passed, detail in results:
         print(f"{'PASS' if passed else 'MISSING/UNVERIFIED'} {label}: {detail}")
     print("NOT VERIFIED: authoritative instance identities and fields, guard integration, "
-          "frozen contracts, seed acceptance, image contents, model access, runtime "
+          "frozen contracts, isolation, image contents, model access, runtime "
           "and evaluator end-to-end. This preflight cannot establish readiness.")
     return 1
 

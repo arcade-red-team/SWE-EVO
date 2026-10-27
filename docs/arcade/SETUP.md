@@ -5,8 +5,8 @@ Do not start the full experiment until the owner approves its cost and the
 blocking items below are resolved.
 
 Run `python3 scripts/arcade/preflight.py` for read-only preliminary checks.
-It exits nonzero even if those checks pass: it cannot verify all readiness
-conditions and is not the requested end-to-end experiment runner.
+It checks Codex availability and selected evaluator prerequisites. It exits
+nonzero even if its checks pass and is not the experiment runner.
 
 After obtaining the pinned public JSONL, `python3 scripts/arcade/prepare_dataset.py
 PATH_TO_JSONL NEW_PRIVATE_OUTPUT_DIRECTORY` verifies its SHA-256 and creates
@@ -35,13 +35,40 @@ directory. This preparation does not establish evaluator correctness.
 
 ## Scaffold and infrastructure
 
-OpenHands with CodeActAgent is the provisional scaffold in both arms: the
-benchmark README names it and the vendored source contains MCP configuration,
-so it is a candidate for integrating the ARCADE server without changing
-scaffolds between arms. The paper uses a limit of 100 OpenHands iterations.
-MCP connectivity, visibility of the task checkout, a mandatory pre-submit check,
-and the two-repair limit have **not** been demonstrated in this evaluation
-runtime. A configuration field alone does not prove enforcement.
+The user approved **Codex CLI in both arms**, using `gpt-6-luna` with
+`model_reasoning_effort="low"` and three independent repetitions per task.
+This replaces the previously proposed OpenHands scaffold and relaxes the
+fixed-seed and fixed-temperature requirements: repetitions are not seed values,
+and neither sampling control is asserted. Codex is a deviation from the
+paper's OpenHands/SWE-agent setup; report it explicitly and do not attribute
+differences between separate scaffolds to ARCADE. The paper's OpenHands
+100-iteration limit is not automatically equivalent to a Codex budget. Define
+and validate equal limits for both Codex arms before the experiment.
+
+Record the Codex CLI version, model identifier, reasoning effort, provider,
+repetition index, environment and any observable backend version or usage.
+Codex CLI supports choosing the model and reasoning effort, but the inspected
+CLI exposes no verified seed or temperature controls. OpenAI's
+[GPT-6 guidance](https://developers.openai.com/api/docs/guides/latest-model)
+instructs API clients to omit temperature when reasoning is not `none`.
+Backend identity and run-to-run reproducibility remain unverified.
+
+The user-approved subscription option uses Codex signed in with ChatGPT;
+usage is drawn from the plan allowance and additional credits may apply
+depending on account settings. Do not use the user's Codex credentials as an
+API key or publish them. MCP connectivity, visibility of the task checkout,
+a mandatory pre-submit check, and the two-repair limit have **not** been
+demonstrated in this evaluation runtime. A configuration field or prompt alone
+does not prove enforcement.
+
+`scripts/arcade/guard.py` provides a preliminary decision function for supported
+contracts. It compares MCP findings with the frozen baseline and checks edge
+rules against the ARCADE conformance source hash at commit
+`0c5a2b7dac0baf2c406b48781433dd9463b017b3`. A missing finding or incomplete
+coverage is unscorable. The function relies on caller-supplied snapshot hashes,
+repair count and coverage evidence: it does not itself bind MCP to the tree,
+prove isolation, call Codex, or enforce a submission boundary. The eventual
+driver must pin the entire ARCADE runtime, not just this checked source file.
 
 The root project specifies Python 3.10+; the vendored OpenHands
 `pyproject.toml` specifies Python >=3.12,<3.14. The root README gives
@@ -71,8 +98,10 @@ untrusted benchmark code and pin the provider and approved data destination.
 - The README's OpenHands command refers to
   `OpenHands/evaluation/benchmarks/swe_bench/scripts/run_infer.sh`, but
   `OpenHands/evaluation/` is absent at this commit. Obtain and pin a compatible
-  evaluation scaffold from an authoritative source, then prove a single-task
-  inference path. Do not substitute an unpinned current release silently.
+  evaluation scaffold from an authoritative source to reproduce that separate
+  OpenHands path. This is not a prerequisite for the approved Codex path;
+  the Codex inference adapter and its output-to-evaluator mapping still need
+  implementation and single-task validation.
   Candidate source: [OpenHands 0.58.0 at `acc427e15f4f2bdd5bf6ceed368888f3379f88a5`](https://github.com/OpenHands/OpenHands/tree/acc427e15f4f2bdd5bf6ceed368888f3379f88a5/evaluation).
   The vendored version number, `pyproject.toml` and `poetry.lock` match this
   tag, as do the inspected CodeActAgent and controller files. However, 17
@@ -119,17 +148,21 @@ untrusted benchmark code and pin the provider and approved data destination.
   its input to approved task context; audit for other answer leakage before
   launching. One task has an empty `PASS_TO_PASS` list, so no regression
   coverage can be inferred for that instance.
-- OpenHands has `temperature` and `seed` configuration fields, but
-  `openhands/llm/retry_mixin.py` can change temperature from 0 to 1 on a
-  no-response retry. Fix the model snapshot, temperature and each of three seeds
-  across both arms, verify actual provider requests and retry behavior, and
-  report if the provider does not honor seed. A seed does not guarantee
-  deterministic provider output.
+- The earlier OpenHands option has `temperature` and `seed` fields, but its
+  `openhands/llm/retry_mixin.py` can change temperature on a no-response retry.
+  The approved Codex setup makes no fixed-temperature or fixed-seed claim;
+  record repetition identifiers as labels only and do not describe them as
+  model seeds. Verify the model and effort actually used by the Codex runtime.
 - For each task's exact base commit, reconstruct and freeze the architecture
   contract before either arm runs. A seven-repository inventory is not a
   substitute for contracts keyed to every distinct task base. Verify the
   contract's hash, provenance, parser coverage, and conformance behavior on
   clean and planted-violation controls.
+- ARCADE recovers components at entity granularity while its conformance
+  mapping uses file globs; entities within one file can map to distinct recovered
+  components. Verify faithful mapping against each real base before creating
+  enforceable rules. A package layout or absent dependency alone does not prove
+  a forbidden dependency; unresolved rules and uncovered code are not passes.
 
 ## Benchmark interpretation
 

@@ -17,9 +17,9 @@ def fixture():
     tasks = {'a': 'repo1', 'b': 'repo2'}
     rows = []
     for task_id in tasks:
-        for seed in (1, 2, 3):
+        for repetition in (1, 2, 3):
             for mode in ('baseline', 'arcade'):
-                rows.append({'task_id': task_id, 'seed': seed, 'mode': mode,
+                rows.append({'task_id': task_id, 'repetition': repetition, 'mode': mode,
                              'status': 'measured', 'resolved': mode == 'arcade',
                              'metrics': {'fix_rate': 0.7 if mode == 'arcade' else 0.2}})
     return tasks, rows
@@ -47,10 +47,10 @@ class AnalyzeTest(unittest.TestCase):
         self.assertEqual(one.stdout, two.stdout)
         result = json.loads(one.stdout)['groups']['all']
         self.assertEqual(result['n_tasks'], 2)
-        self.assertEqual(result['resolve_by_seed']['1']['arcade_only'], 2)
-        self.assertEqual(result['resolve_by_seed']['1']['p_two_sided_exact'], 0.5)
-        self.assertEqual(result['resolve_by_seed']['1']['paired_difference'], 1)
-        self.assertEqual(result['resolve_by_seed']['1']['difference_95_percentile_bootstrap_ci'], [1, 1])
+        self.assertEqual(result['resolve_by_repetition']['1']['arcade_only'], 2)
+        self.assertEqual(result['resolve_by_repetition']['1']['p_two_sided_exact'], 0.5)
+        self.assertEqual(result['resolve_by_repetition']['1']['paired_difference'], 1)
+        self.assertEqual(result['resolve_by_repetition']['1']['difference_95_percentile_bootstrap_ci'], [1, 1])
         self.assertAlmostEqual(result['continuous_metric']['mean_paired_difference'], 0.5)
         self.assertEqual(result['continuous_metric']['paired_sign_flip']['p_two_sided'], 0.5)
 
@@ -60,7 +60,7 @@ class AnalyzeTest(unittest.TestCase):
         self.assertEqual(result['p_two_sided_exact'], 0.0625)
         self.assertEqual(result['arcade_only'], 5)
 
-    def test_missing_seed_mode_or_whole_task_fails_closed(self):
+    def test_missing_repetition_mode_or_whole_task_fails_closed(self):
         _, rows = fixture()
         for altered in (rows[:-1], [row for row in rows if row['task_id'] != 'b']):
             proc = self.run_fixture(altered)
@@ -80,6 +80,14 @@ class AnalyzeTest(unittest.TestCase):
             self.assertEqual(proc.returncode, 2, proc.stderr)
             self.assertEqual(proc.stdout, '')
 
+    def test_seed_is_not_a_repetition_label(self):
+        _, rows = fixture()
+        for row in rows:
+            row['seed'] = row.pop('repetition')
+        proc = self.run_fixture(rows)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn('repetition', proc.stderr)
+
     def test_manifest_count_prevents_silently_analyzing_subset(self):
         _, rows = fixture()
         proc = self.run_fixture([row for row in rows if row['task_id'] == 'a'], {'a': 'repo1'})
@@ -88,7 +96,7 @@ class AnalyzeTest(unittest.TestCase):
 
     def test_duplicate_json_keys_rejected(self):
         with self.assertRaises(ValueError):
-            analyze.read_json('{"seed":1,"seed":2}')
+            analyze.read_json('{"repetition":1,"repetition":2}')
 
 
 if __name__ == '__main__':

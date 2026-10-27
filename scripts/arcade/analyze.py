@@ -2,10 +2,10 @@
 """Analyze complete, explicitly paired SWE-EVO JSONL outcomes.
 
 Manifest JSON: {"tasks": [{"id": "...", "repo": "..."}, ...]}.
-JSONL: {"task_id": "...", "seed": 1, "mode": "baseline"|"arcade",
+JSONL: {"task_id": "...", "repetition": 1, "mode": "baseline"|"arcade",
         "status": "measured", "resolved": true|false,
         "metrics": {"metric_name": number, ...}}.
-Each task must occur once for every mode and seed 1, 2 and 3. Missing or
+Each task must occur once for every mode and repetition 1, 2 and 3. Missing or
 unmeasured outcomes abort analysis instead of being silently excluded.
 """
 
@@ -18,7 +18,7 @@ import random
 import sys
 from pathlib import Path
 
-SEEDS = (1, 2, 3)
+REPETITIONS = (1, 2, 3)
 MODES = ("baseline", "arcade")
 
 
@@ -61,10 +61,10 @@ def load_inputs(manifest_path, outcome_path, metric, expected_tasks):
         row = read_json(line)
         if not isinstance(row, dict):
             raise ValueError(f"line {number}: expected object")
-        task_id, seed, mode = row.get("task_id"), row.get("seed"), row.get("mode")
-        if not isinstance(task_id, str) or task_id not in tasks or type(seed) is not int or seed not in SEEDS or mode not in MODES:
-            raise ValueError(f"line {number}: unexpected task, seed or mode")
-        key = (task_id, seed, mode)
+        task_id, repetition, mode = row.get("task_id"), row.get("repetition"), row.get("mode")
+        if not isinstance(task_id, str) or task_id not in tasks or type(repetition) is not int or repetition not in REPETITIONS or mode not in MODES:
+            raise ValueError(f"line {number}: unexpected task, repetition or mode")
+        key = (task_id, repetition, mode)
         if key in records:
             raise ValueError(f"line {number}: duplicate outcome {key}")
         value = row.get("metrics", {}).get(metric) if isinstance(row.get("metrics"), dict) else None
@@ -73,7 +73,7 @@ def load_inputs(manifest_path, outcome_path, metric, expected_tasks):
         if type(value) not in (int, float) or not math.isfinite(value):
             raise ValueError(f"line {number}: metric {metric!r} missing or non-finite")
         records[key] = row
-    expected = {(task_id, seed, mode) for task_id in tasks for seed in SEEDS for mode in MODES}
+    expected = {(task_id, repetition, mode) for task_id in tasks for repetition in REPETITIONS for mode in MODES}
     missing = expected - records.keys()
     if missing:
         raise ValueError(f"missing {len(missing)} outcomes; first: {sorted(missing)[0]}")
@@ -135,36 +135,36 @@ def analyze(tasks, records, metric, draws, analysis_seed):
         groups[repo] = [task_id for task_id in all_ids if tasks[task_id] == repo]
     output = {}
     for name, ids in groups.items():
-        seed_results = {}
-        for seed in SEEDS:
-            before = [records[(task_id, seed, "baseline")]["resolved"] for task_id in ids]
-            after = [records[(task_id, seed, "arcade")]["resolved"] for task_id in ids]
+        repetition_results = {}
+        for repetition in REPETITIONS:
+            before = [records[(task_id, repetition, "baseline")]["resolved"] for task_id in ids]
+            after = [records[(task_id, repetition, "arcade")]["resolved"] for task_id in ids]
             differences = [int(a) - int(b) for b, a in zip(before, after)]
-            seed_results[str(seed)] = {
+            repetition_results[str(repetition)] = {
                 "n_pairs": len(ids), "baseline_rate": mean(before), "arcade_rate": mean(after),
                 "paired_difference": mean(differences), "difference_95_percentile_bootstrap_ci": bootstrap(differences, draws, rng),
                 **exact_mcnemar(before, after),
             }
-        binary_diffs = [mean([int(records[(task_id, seed, "arcade")]["resolved"]) - int(records[(task_id, seed, "baseline")]["resolved"]) for seed in SEEDS]) for task_id in ids]
-        continuous_diffs = [mean([records[(task_id, seed, "arcade")]["metrics"][metric] - records[(task_id, seed, "baseline")]["metrics"][metric] for seed in SEEDS]) for task_id in ids]
-        baseline_metric = mean([records[(task_id, seed, "baseline")]["metrics"][metric] for task_id in ids for seed in SEEDS])
-        arcade_metric = mean([records[(task_id, seed, "arcade")]["metrics"][metric] for task_id in ids for seed in SEEDS])
+        binary_diffs = [mean([int(records[(task_id, repetition, "arcade")]["resolved"]) - int(records[(task_id, repetition, "baseline")]["resolved"]) for repetition in REPETITIONS]) for task_id in ids]
+        continuous_diffs = [mean([records[(task_id, repetition, "arcade")]["metrics"][metric] - records[(task_id, repetition, "baseline")]["metrics"][metric] for repetition in REPETITIONS]) for task_id in ids]
+        baseline_metric = mean([records[(task_id, repetition, "baseline")]["metrics"][metric] for task_id in ids for repetition in REPETITIONS])
+        arcade_metric = mean([records[(task_id, repetition, "arcade")]["metrics"][metric] for task_id in ids for repetition in REPETITIONS])
         output[name] = {
-            "n_tasks": len(ids), "primary_seed": 1, "resolve_by_seed": seed_results,
-            "resolve_three_seed_mean_paired_difference": mean(binary_diffs),
-            "resolve_three_seed_difference_95_percentile_bootstrap_ci": bootstrap(binary_diffs, draws, rng),
+            "n_tasks": len(ids), "primary_repetition": 1, "resolve_by_repetition": repetition_results,
+            "resolve_three_repetition_mean_paired_difference": mean(binary_diffs),
+            "resolve_three_repetition_difference_95_percentile_bootstrap_ci": bootstrap(binary_diffs, draws, rng),
             "continuous_metric": {"name": metric, "baseline_mean": baseline_metric, "arcade_mean": arcade_metric,
                 "mean_paired_difference": mean(continuous_diffs),
                 "difference_95_percentile_bootstrap_ci": bootstrap(continuous_diffs, draws, rng),
                 "paired_sign_flip": sign_flip(continuous_diffs, draws, rng)},
         }
-    return {"analysis_seed": analysis_seed, "bootstrap_draws": draws, "seeds": list(SEEDS), "groups": output}
+    return {"analysis_seed": analysis_seed, "bootstrap_draws": draws, "repetitions": list(REPETITIONS), "groups": output}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True, help="JSON task ID and repository manifest")
-    parser.add_argument("--outcomes", required=True, help="JSONL per task, seed, and arm")
+    parser.add_argument("--outcomes", required=True, help="JSONL per task, repetition, and arm")
     parser.add_argument("--metric", required=True, help="one numeric metric to compare")
     parser.add_argument("--expected-tasks", type=int, default=48)
     parser.add_argument("--draws", type=int, default=10000)
