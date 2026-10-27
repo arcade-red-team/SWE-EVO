@@ -126,6 +126,12 @@ below apply to the linked exact revisions and cited scope only.
   behavior and full-workspace coverage remain unproven, and it has not been
   integrated into the experiment's MCP or submission boundary. It is not a
   frozen contract or an experiment result.
+  A later scoped prototype distinguished `NO_MATCH`, lexical `VIOLATION` and
+  `UNKNOWN` without treating `NO_MATCH` as a runtime or repository-wide pass.
+  A local Modin preflight used an exact base snapshot and real MCP stdio with
+  clean and planted controls, but still returned `BLOCKED`: its contract was
+  not committed, runtime and workspace coverage were unknown, and guard and
+  evaluator integration were not verified. No model task was run.
 - **scikit-learn: import syntax and test boundaries.** At both
   [`55bf5d93e5674f13a1134d93a11fd0cd11aabcd1`](https://github.com/scikit-learn/scikit-learn/blob/55bf5d93e5674f13a1134d93a11fd0cd11aabcd1/doc/developers/contributing.rst#L648-L656)
   and [`b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab`](https://github.com/scikit-learn/scikit-learn/blob/b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab/doc/developers/contributing.rst#L753-L761),

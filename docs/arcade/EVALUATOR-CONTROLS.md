@@ -186,3 +186,11 @@ immediately on every install error. The
 [sanitized summaries](modin-control-summary.jsonl) exclude task contents and
 gold-bearing logs, which remain private. Resolving and pinning the environment,
 then repeating both controls, is necessary before evaluating agent patches.
+
+A diagnostic rerun mapped the container's hostname to loopback while retaining
+Docker network mode `none`; the previous DNS failures disappeared, but pytest
+collected 172 tests and exited with code 1 before reporting any test status.
+The harness nevertheless reached its completion marker. A separate Ray canary
+also exited 1; increasing `/dev/shm` to 2 GiB did not fix it, and no cgroup OOM
+event was observed. The cause remains unverified. Do not use the harness
+completion marker alone to decide that this evaluation succeeded.
