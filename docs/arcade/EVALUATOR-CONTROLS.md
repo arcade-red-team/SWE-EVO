@@ -46,6 +46,55 @@ regression coverage. The image has Python 3.9 and pytest 7.4.4 but lacks
 pin the environment, verify all intended test statuses and reproduce on the
 actual evaluator before treating any run as a benchmark result.
 
+## Dependency diagnostics
+
+The base repository pins `pytest-httpbin` to `0.0.7` in `setup.py` and `0.2.0`
+in `requirements.txt`. Both variants were investigated without choosing one
+as authoritative. The first wheel-only installs selected an incompatible
+modern Werkzeug, so pytest could not import `httpbin`. The old versions pinned
+by the repository were then downloaded with verified source hashes; four
+source-only packages were built into wheels offline in an isolated container.
+Derived images were built offline with per-wheel hashes and no network during
+test execution. The original benchmark image was not modified.
+
+Two different diagnostic configurations produced these results for **each**
+of the two plugin versions:
+
+| Configuration | Gold suite | Empty suite | Upstream parser on 113 targets |
+|---|---|---|---|
+| Repo-pinned pytest 2.8.7, `-p no:typeguard --assert=plain` | 244 passed, 2 failed, 1 xfailed, 1 xpassed | 240 passed, 6 failed, 1 xfailed, 1 xpassed | All 113 missing; no valid score |
+| Image pytest 7.4.4 plus fixture dependencies, without old `py` pin | 243 passed, 3 failed, 1 xfailed, 1 xpassed | 239 passed, 7 failed, 1 xfailed, 1 xpassed | Gold: 4/4 new and 109/109 old pass; empty: 0/4 new and 109/109 old pass |
+
+The repo-pinned pytest 2 executable and output format differ from what the
+upstream evaluator expects; test identifiers also differ. Earlier attempts
+using the expected `pytest` executable therefore did not collect tests. A
+first pytest 7 attempt with the repo's old `py` package also failed before
+test collection. These failures are retained in
+[`evaluator-dependency-diagnostics.jsonl`](evaluator-dependency-diagnostics.jsonl)
+alongside the later controls; the file contains 16 summaries, not raw logs or
+gold patches. Its SHA-256 is
+`1915290e725167b62f3997fd2fec26ed9e3108d2abef59c40f54ba0e856040de`.
+
+For pytest 7, the three failures common to gold and empty are two SSL tests
+reporting `CA_MD_TOO_WEAK` and a test using a string form of `pytest.raises`
+that pytest 7 rejects. The four additional empty-patch failures are the selected
+FAIL_TO_PASS tests. All 113 selected test statuses were parsed in these four
+pytest 7 controls, and the upstream grader reported gold resolved and empty
+unresolved. This mixed environment is a diagnostic intervention: the image
+uses pytest 7 while the repository requirements pin pytest 2. It is not an
+unmodified official benchmark result and does not demonstrate full old-test
+regression coverage.
+
+The local derived image IDs for the pytest 7 controls were
+`sha256:66b065d28b65aaa27e319edbf4a5670f5673b67566bc2780a9c753fbafce40d5`
+and `sha256:be467e0f6cc8e6511deb2b5684ab955635d874167a2609df04f345321c829fe0`.
+Their corresponding wheel-lock hashes were
+`6538b8164e92215d7f657b3ad076ca40d0e709fa962e63965cd7589b927acfac`
+and `4d2ab57cdaf82445d8cc19d5f3250d58e20e5ea3f1f8ee5ea589ada1cd867e6c`.
+The locks, wheels and full logs are retained locally, not redistributed here;
+the Docker build and evaluator adapter are not yet packaged as a portable,
+one-command reproduction. No model or agent patch was involved.
+
 The controls used SWE-EVO source at `9b83d5af943ba7a17567336f5b18239f73960219`
 with a local adapter that replaces container creation and isolates the network;
 unused Modal and collection imports were stubbed. The adapter and environment
