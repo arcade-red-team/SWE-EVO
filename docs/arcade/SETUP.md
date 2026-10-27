@@ -94,6 +94,8 @@ This observation used Python 3.12.11, networkx 3.6.1, tree-sitter 0.25.2 and
 tree-sitter-python 0.25.0, with tests excluded. The guard maps by file, so it
 cannot exactly express these six split files. This is not a complete coverage
 assessment or evidence for the other 47 bases.
+The subsequent descriptive scan of all 48 bases is documented in
+[RECOVERY.md](RECOVERY.md); it does not produce enforceable contracts.
 
 The root project specifies Python 3.10+; the vendored OpenHands
 `pyproject.toml` specifies Python >=3.12,<3.14. The root README gives
