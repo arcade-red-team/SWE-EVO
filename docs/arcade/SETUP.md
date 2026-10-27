@@ -203,6 +203,13 @@ untrusted benchmark code and pin the provider and approved data destination.
   components. Verify faithful mapping against each real base before creating
   enforceable rules. A package layout or absent dependency alone does not prove
   a forbidden dependency; unresolved rules and uncovered code are not passes.
+- Owner decision: encode only architecture rules supported by evidence from the
+  repository at the task base. A new inter-package dependency is not itself a
+  violation merely because it did not exist at baseline. Keep the recovered
+  graph for descriptive metrics, record each enforced rule's source and scope,
+  and mark a task without supported, representable rules as unscorable for the
+  guard comparison rather than manufacturing a violation policy. See
+  [RULE_EVIDENCE.md](RULE_EVIDENCE.md) for the scoped review of all 48 bases.
 
 ## Benchmark interpretation
 

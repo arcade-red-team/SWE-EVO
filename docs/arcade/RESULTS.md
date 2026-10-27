@@ -17,6 +17,10 @@ yet connected to the benchmark evaluator or a run pipeline.
 
 Contracts must be produced from each task's base revision before inference, frozen and committed with hashes, and checked against the matching task base. A contract or analysis failure is an error, not zero violations or a passing result. Comparisons of violations must identify findings introduced relative to the base, not just subtract aggregate totals. Record changed rules, identity matching and unsupported or unresolved findings explicitly.
 
+The owner chose repository-evidenced rules only: absence of a dependency in the
+base does not make a new dependency a violation. Recovered graphs describe the
+observed structure; they do not establish the maintainers' intended rules.
+
 ## Results by repository
 
 `Not run` means no data have been collected. Counts below are planned task counts from the paper, not results. Each task is planned to have three runs in each arm; denominator and incomplete cases must be reported when populated.

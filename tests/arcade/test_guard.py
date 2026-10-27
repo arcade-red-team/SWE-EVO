@@ -50,6 +50,21 @@ class GuardTest(unittest.TestCase):
         self.assertEqual(self.decide(CLEAN, result, 2).status, "repair_limit_reached")
         self.assertEqual(self.decide(CLEAN, result, 3).status, "unscorable")
 
+    def test_new_dependency_is_not_a_violation_without_a_rule(self):
+        candidate = copy.deepcopy(CLEAN)
+        candidate["component_edges"].append({"from": "service", "to": "store", "count": 1})
+        decision = self.decide(CLEAN, candidate)
+        self.assertEqual(decision.status, "accept")
+        self.assertEqual(decision.new_violations, ())
+
+    def test_contract_without_supported_rules_is_unscorable(self):
+        contract = json.dumps({"components": [{"name": "api", "match": "api/**"}]}).encode()
+        digest = hashlib.sha256(contract).hexdigest()
+        base = guard.Binding("a" * 64, "a" * 64, "a" * 64, digest, digest, digest, True)
+        candidate = guard.Binding("b" * 64, "b" * 64, "b" * 64, digest, digest, digest, True)
+        decision = guard.decide(CLEAN, CLEAN, contract, base, candidate, 0)
+        self.assertEqual(decision.status, "unscorable")
+
     def test_finding_identity_is_not_numbered_mcp_id(self):
         baseline = result_forbidden()
         candidate = copy.deepcopy(baseline)
