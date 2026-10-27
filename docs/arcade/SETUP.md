@@ -7,6 +7,8 @@ blocking items below are resolved.
 Run `python3 scripts/arcade/preflight.py` for read-only preliminary checks.
 It checks Codex availability and selected evaluator prerequisites. It exits
 nonzero even if its checks pass and is not the experiment runner.
+The login status refers only to the current environment and does not establish
+that a separate benchmark home is logged in or can access the model.
 
 After obtaining the pinned public JSONL, `python3 scripts/arcade/prepare_dataset.py
 PATH_TO_JSONL NEW_PRIVATE_OUTPUT_DIRECTORY` verifies its SHA-256 and creates
@@ -14,6 +16,15 @@ PATH_TO_JSONL NEW_PRIVATE_OUTPUT_DIRECTORY` verifies its SHA-256 and creates
 contain gold data. File permissions alone do not isolate processes running as
 the same user: the agent's container must not mount or otherwise access this
 directory. This preparation does not establish evaluator correctness.
+
+`python3 scripts/arcade/cohort.py verify --dataset PATH_TO_JSONL --manifest
+docs/arcade/cohort.json` verifies that all 48 IDs, repositories and base commits
+match the pinned dataset. The committed manifest contains only these identity
+fields and has SHA-256
+`94c692e79b2d55e85bae65f3a251bded0c68100cf35bba3879a12617cba8386d`.
+The `create` action writes a new manifest without evaluator answers. It must
+read the private dataset outside the agent environment and does not validate
+the images, contracts, trajectories or evaluator outcomes.
 
 `scripts/arcade/prepare_predictions.py --manifest MANIFEST --records PATCHES
 --output PREDS_JSON` exports completed Codex patches to the existing evaluator's

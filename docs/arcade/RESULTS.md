@@ -9,11 +9,12 @@ The approved plan compares Codex CLI with `gpt-6-luna` at reasoning effort `low`
 `scripts/arcade/analyze.py` implements a preliminary analysis of a complete,
 explicit task manifest and paired JSONL outcome set; see its `--help` for the
 input schema. Its `repetition` labels identify independent runs, not model seeds.
-The manifest must
-first be checked against the pinned dataset:
-the analysis checks its count and pairing but cannot establish that the IDs
-are the official 48 tasks. It deliberately refuses incomplete data, and is not
-yet connected to the benchmark evaluator or a run pipeline.
+Pass `--dataset PATH_TO_PINNED_JSONL` when analyzing benchmark outcomes to
+verify the manifest's 48 IDs, repositories and base commits against the pinned
+dataset; the analysis output explicitly records whether this check ran. Without
+that option, the analysis only checks the supplied manifest's count and pairing
+and must not be reported as verified official coverage. It deliberately refuses
+incomplete data, and is not yet connected to the evaluator or a run pipeline.
 
 Contracts must be produced from each task's base revision before inference, frozen and committed with hashes, and checked against the matching task base. A contract or analysis failure is an error, not zero violations or a passing result. Comparisons of violations must identify findings introduced relative to the base, not just subtract aggregate totals. Record changed rules, identity matching and unsupported or unresolved findings explicitly.
 

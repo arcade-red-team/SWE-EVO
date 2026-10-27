@@ -55,6 +55,13 @@ class PreflightTest(unittest.TestCase):
         self.assertFalse(statuses["SWE-EVO evaluator"])
         self.assertFalse(statuses["Evaluator instance JSON count and unique IDs"])
 
+    def test_login_check_is_scoped_to_current_environment(self):
+        with patch.object(preflight, "command", side_effect=self.command_control):
+            results = preflight.check(Path("."))
+        login = next(row for row in results if row[0].startswith("Codex ChatGPT login"))
+        self.assertIn("current environment only", login[0])
+        self.assertIn("benchmark home and model access not verified", login[2])
+
     def test_incomplete_evaluator_inputs_are_not_ready(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

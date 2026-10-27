@@ -27,8 +27,8 @@ def check(root: Path, inputs: Path | None = None) -> list[tuple[str, bool, str]]
     codex_ok, version = command(["codex", "--version"], root)
     results.append(("Codex CLI installed", codex_ok, version if codex_ok else "unavailable"))
     login_ok, login = command(["codex", "login", "status"], root)
-    results.append(("Codex ChatGPT login", login_ok and "Logged in using ChatGPT" in login,
-                    "ChatGPT login detected" if login_ok and "Logged in using ChatGPT" in login
+    results.append(("Codex ChatGPT login (current environment only)", login_ok and "Logged in using ChatGPT" in login,
+                    "ChatGPT login detected; benchmark home and model access not verified" if login_ok and "Logged in using ChatGPT" in login
                     else "not verified"))
 
     evaluator = root / "SWE-bench/evaluate_instance.py"

@@ -167,13 +167,21 @@ def main(argv=None):
     parser.add_argument("--outcomes", required=True, help="JSONL per task, repetition, and arm")
     parser.add_argument("--metric", required=True, help="one numeric metric to compare")
     parser.add_argument("--expected-tasks", type=int, default=48)
+    parser.add_argument("--dataset", help="pinned evaluator-only JSONL to verify task IDs, repos and base commits")
     parser.add_argument("--draws", type=int, default=10000)
     parser.add_argument("--analysis-seed", type=int, required=True)
     args = parser.parse_args(argv)
     try:
+        verified_hash = None
+        if args.dataset:
+            import cohort
+            verified_hash = cohort.verify(args.manifest, Path(args.dataset))
         tasks, records, manifest_hash, outcomes_hash = load_inputs(args.manifest, args.outcomes, args.metric, args.expected_tasks)
+        if verified_hash is not None and verified_hash != manifest_hash:
+            raise ValueError("manifest changed after cohort verification")
         result = analyze(tasks, records, args.metric, args.draws, args.analysis_seed)
         result["input_sha256"] = {"manifest": manifest_hash, "outcomes": outcomes_hash}
+        result["cohort_verified_against_pinned_dataset"] = verified_hash is not None
         print(json.dumps(result, allow_nan=False, sort_keys=True, indent=2))
     except (ValueError, OSError, UnicodeError, OverflowError) as exc:
         print(f"analysis error: {exc}", file=sys.stderr)

@@ -54,6 +54,17 @@ below apply to the linked exact revisions and cited scope only.
   selected 545 files and returned zero findings twice, with identical normalized
   JSON hashes. This host-only check does not establish the image environment or
   demonstrate that ARCADE itself enforces this rule.
+  A further full-source canary inserted the same function in `dvc/daemon.py`
+  with (1) the allowed DVC import, (2) a used forbidden `funcy` import and
+  (3) an unused forbidden `funcy` import. Ruff returned no finding for (1) and
+  TID251 for both (2) and (3). The pinned ARCADE parser produced the same
+  serialized entity fields and edge triples in all three cases: 2,535 entities,
+  2,494 edges, SHA-256
+  `1a43b128ac35d892007e5e4572277f7c301b8b281ef58a8467f4aacf8d6ce548`.
+  Two runs matched after excluding elapsed time. This comparison excludes other
+  graph metadata and does not establish overall parser coverage; it shows that
+  this graph input cannot distinguish these particular controls. The Ruff
+  checker is not an ARCADE-only intervention.
   A follow-up scan found `test_no_remote_imports` in 22 of the 26 DVC bases;
   for example, [this test](https://github.com/iterative/dvc/blob/84b2e685e25c31fc1296d2902c728d84785a656d/tests/unit/test_imports.py#L5)
   verifies optional remote modules remain unloaded after a CLI import. That
