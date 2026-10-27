@@ -15,6 +15,14 @@ contain gold data. File permissions alone do not isolate processes running as
 the same user: the agent's container must not mount or otherwise access this
 directory. This preparation does not establish evaluator correctness.
 
+`scripts/arcade/prepare_predictions.py --manifest MANIFEST --records PATCHES
+--output PREDS_JSON` exports completed Codex patches to the existing evaluator's
+SWE-agent `preds.json` shape and refuses missing or duplicate manifest IDs.
+An empty patch is a completed no-change prediction, distinct from a missing
+trajectory. This adapter has not been tested with the actual evaluator. Because
+the evaluator merges the test patch into the submitted patch, its patch-exists
+field alone does not prove that an agent produced a nonempty code patch.
+
 ## Sources and licences
 
 - SWE-EVO source inspected at commit
@@ -69,6 +77,21 @@ coverage is unscorable. The function relies on caller-supplied snapshot hashes,
 repair count and coverage evidence: it does not itself bind MCP to the tree,
 prove isolation, call Codex, or enforce a submission boundary. The eventual
 driver must pin the entire ARCADE runtime, not just this checked source file.
+
+`scripts/arcade/recovery_probe.py` examines one clean source checkout at an
+explicit base SHA, checks the ARCADE source tree hash, and compares two cold
+package recoveries. It records files with entities split across recovered
+components and selected files with no entities; it does not create a contract.
+For the public Requests base `ca15d4808734c86801c8f3d80c9152c35a163dc3`,
+ARCADE `0c5a2b7dac0baf2c406b48781433dd9463b017b3` selected 94 of 106
+tracked Python files, assigned 816 entities and 770 edges, and split entities
+from six files across components. Eight selected files had no entities;
+relation coverage was not reported. Two outputs had matching normalized SHA-256
+`761f54904f11e672f56db4aeb3d45bbf8bd1757ce5d26a561fa516492142492a`.
+This observation used Python 3.12.11, networkx 3.6.1, tree-sitter 0.25.2 and
+tree-sitter-python 0.25.0, with tests excluded. The guard maps by file, so it
+cannot exactly express these six split files. This is not a complete coverage
+assessment or evidence for the other 47 bases.
 
 The root project specifies Python 3.10+; the vendored OpenHands
 `pyproject.toml` specifies Python >=3.12,<3.14. The root README gives
@@ -143,6 +166,15 @@ untrusted benchmark code and pin the provider and approved data destination.
   clean control and a known failing patch before using aggregate metrics.
   Missing trajectories and infrastructure failures must be recorded explicitly,
   not treated as measured failures or silently omitted.
+- A source-level check found that the vendored grading helper omits `SKIPPED`
+  cases from both success and failure lists, while an empty list gives a score
+  of 1; it also treats `XFAIL` as passing. An all-skipped FAIL_TO_PASS set can
+  make the evaluator's Fix Rate division have a zero denominator. Preserve the
+  official output, but independently verify each expected test's parsed status,
+  report missing, skipped and expected-failure cases, and do not label them
+  as verified ordinary passes. Parser-to-evaluator and container behavior
+  remain unverified; see `SWE-bench/swebench/harness/grading.py` and
+  `SWE-bench/evaluate_instance.py` at the pinned revision.
 - The JSONL contains gold `patch`, `all_patch` and `test_patch` fields. Keep
   gold and evaluator-only fields inaccessible to the coding agent and restrict
   its input to approved task context; audit for other answer leakage before
