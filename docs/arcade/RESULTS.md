@@ -6,6 +6,13 @@
 
 The planned benchmark compares the original scaffold (baseline) with the same scaffold using ARCADE-Agent's MCP server and a conformance check before patch submission. The arcade arm may repair a nonconforming patch at most twice. Each arm is planned for all 48 tasks and the same three seed values: 288 initial task runs in total. Both arms start each task independently from its benchmark base revision; neither consumes the other arm's patch. The base revision, task data, model and version, temperature, seed, scaffold, resource limits, prompts, test environment and tool versions must be recorded. Seed support must be verified end to end: a recorded seed alone does not establish deterministic model output.
 
+`scripts/arcade/analyze.py` implements a preliminary analysis of a complete,
+explicit task manifest and paired JSONL outcome set; see its `--help` for the
+input schema. The manifest must first be checked against the pinned dataset:
+the analysis checks its count and pairing but cannot establish that the IDs
+are the official 48 tasks. It deliberately refuses incomplete data, and is not
+yet connected to the benchmark evaluator or a run pipeline.
+
 Contracts must be produced from each task's base revision before inference, frozen and committed with hashes, and checked against the matching task base. A contract or analysis failure is an error, not zero violations or a passing result. Comparisons of violations must identify findings introduced relative to the base, not just subtract aggregate totals. Record changed rules, identity matching and unsupported or unresolved findings explicitly.
 
 ## Results by repository
