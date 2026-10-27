@@ -17,6 +17,14 @@ contain gold data. File permissions alone do not isolate processes running as
 the same user: the agent's container must not mount or otherwise access this
 directory. This preparation does not establish evaluator correctness.
 
+`python3 scripts/arcade/prepare_tasks.py PATH_TO_JSONL NEW_TASK_INPUT_DIRECTORY`
+uses the same pinned dataset validation and exports only the instance ID,
+repository, base commit and benchmark-provided problem statement. It does not
+copy evaluator patch or test fields. The directory must be separately mounted
+into the agent environment; file modes alone do not prevent a process running
+as the same user from reading evaluator data. This extractor does not establish
+isolation or sanitize the benchmark statement.
+
 `python3 scripts/arcade/cohort.py verify --dataset PATH_TO_JSONL --manifest
 docs/arcade/cohort.json` verifies that all 48 IDs, repositories and base commits
 match the pinned dataset. The committed manifest contains only these identity
@@ -101,6 +109,15 @@ symlink to a denied sibling returned a nonempty graph for the readable file
 without reporting the denied file. Thus a nonempty graph also does not prove
 complete coverage; snapshot identity and independent file/edge coverage checks
 are required before trusting a guard decision.
+
+Another synthetic macOS command-sandbox canary denied path and symlink access
+to a private sibling and denied local TCP and Unix socket connections. It also
+showed that a private file descriptor deliberately inherited from the parent
+remained readable, while the same descriptor was unavailable with `pass_fds=()`;
+a synthetic file under `/tmp` was readable in the tested profile. Keep gold
+and credentials out of shared temporary paths, close unneeded inherited
+descriptors, and repeat canaries with the actual launcher and MCP process. This
+does not establish complete isolation or keychain protection.
 
 `scripts/arcade/guard.py` provides a preliminary decision function for supported
 contracts. It compares MCP findings with the frozen baseline and checks edge

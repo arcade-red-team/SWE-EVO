@@ -65,6 +65,15 @@ The benchmark contains 48 release tasks, with 26 from dvc and only two each from
 
 Public release histories, tests, issues and benchmark data may have appeared in model training. Record the model identifier and backend identity if available; blocking task-container access to future source reduces some leakage but cannot prove absence of training contamination. The independent baseline must not see the frozen contract or arcade feedback. Both arms must receive the same benchmark-provided problem context and equivalent budgets, except for the explicitly studied guardrail and its bounded repairs.
 
+An additional literal-overlap screening compared benchmark problem statements
+with individual added lines of the gold patch: 11 of 48 statements contain at
+least one exact added line of 80 or more characters after trimming (eight Dask,
+three Pydantic). This narrow check does not determine whether the line is an
+answer, an example, or benign shared text, and does not rule out other leakage.
+The unchanged statements are benchmark-provided inputs, not independent proof
+that task context is free of solution information. Report this limitation for
+both arms; do not silently remove or alter task content.
+
 Parser coverage, dynamic imports, generated code, unresolved dependencies and package-boundary inference can hide or misclassify architecture findings. Recovered structure alone does not establish intended layering; inferred rules are hypotheses and their evidence and exceptions need review. A lack of reported findings is not evidence of no architectural change if coverage is missing. Changes in graphs, cycles, coupling or smells are proxies rather than proof of maintainability.
 
 The sequential-release experiment, if performed, is **our optional proposed procedure**, not official SWE-EVO protocol. A later release starts from an agent-modified prior release; its outcomes therefore depend on earlier failures and are not directly comparable to the independent-task primary benchmark. Record the full lineage and analyze it separately.
