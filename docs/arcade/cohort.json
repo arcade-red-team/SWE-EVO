@@ -1,0 +1,244 @@
+{
+  "tasks": [
+    {
+      "base_commit": "4614b3abbff15627b3fabdd98bee419721f423ce",
+      "id": "conan-io__conan_2.0.14_2.0.15",
+      "repo": "conan-io/conan"
+    },
+    {
+      "base_commit": "8c424def2d50c9c0e951b52f2609abff19cbeeaa",
+      "id": "conan-io__conan_2.0.2_2.0.3",
+      "repo": "conan-io/conan"
+    },
+    {
+      "base_commit": "3ef47422b9f830f81562960ef549778819498aa1",
+      "id": "dask__dask_2022.9.2_2022.10.0",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "0cbc46ac89b6f6a2cf949f2fd73c4c1175419db5",
+      "id": "dask__dask_2023.3.2_2023.4.0",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "853a6b0db11c17c6b36a54057fbd9b240b747919",
+      "id": "dask__dask_2023.6.0_2023.6.1",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "85c99bc20abc382774cfb6e5bf5f2db76ac09378",
+      "id": "dask__dask_2023.6.1_2023.7.0",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "ca4d1d5830a2efe9650aa6485302193c2aacaf7b",
+      "id": "dask__dask_2023.8.0_2023.8.1",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "216c7c9393d8df1014a911eceb797502999e8a51",
+      "id": "dask__dask_2023.9.2_2023.9.3",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "91dd42529b9ecd7139926ebadbf56a8f6150991f",
+      "id": "dask__dask_2024.1.0_2024.1.1",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "f9310c440b661f1ae96ffd8726404d3c3fe32edc",
+      "id": "dask__dask_2024.3.1_2024.4.0",
+      "repo": "dask/dask"
+    },
+    {
+      "base_commit": "9175c45b1472070e02521380e4db8315d7c910c4",
+      "id": "iterative__dvc_0.30.0_0.30.1",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "c645fdd45e0352f6cdfedee1392dc88e48f7d169",
+      "id": "iterative__dvc_0.33.1_0.34.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "441e4f4745d7925ff82b2321fa946f5ff59fc297",
+      "id": "iterative__dvc_0.35.3_0.35.4",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "fc5d3c182c08a02b6257652654c62b723c854671",
+      "id": "iterative__dvc_0.52.1_0.53.1",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "02daaf391afa31fed3c04413049eece6579b227c",
+      "id": "iterative__dvc_0.89.0_0.90.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "0c2e4d0b723a7c2f120db751193463b4939303d7",
+      "id": "iterative__dvc_0.91.2_0.91.3",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "a338fad036bd9ac8bdd79ecec964f8c5558609c4",
+      "id": "iterative__dvc_0.92.0_0.92.1",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "fc42ca721c25bdd24875c999e37fb4f589ecd63c",
+      "id": "iterative__dvc_1.0.0a1_1.0.0a2",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "a2f1367a9a75849ef6ad7ee23a5bacc18580f102",
+      "id": "iterative__dvc_1.0.0b6_1.0.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "5cb775308df6de07ac70cc25894f271f552e740a",
+      "id": "iterative__dvc_1.0.1_1.0.2",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "35e0dd920614f9f1194c82f61eeaa829f6593fb6",
+      "id": "iterative__dvc_1.1.0_1.1.1",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "520e01f11305aba1994df354adef86e6d90180de",
+      "id": "iterative__dvc_1.1.7_1.1.8",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "c989b28eae536f08767d3cb32e790187d63a581b",
+      "id": "iterative__dvc_1.10.2_1.11.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "9638dde4daf3f338e3538712133c4457e96d23ad",
+      "id": "iterative__dvc_1.11.12_1.11.13",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "be2e0778b4a4156a166bfc41ec74b4ac5e66b2a9",
+      "id": "iterative__dvc_1.6.3_1.6.4",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "78dd045d29f274960bcaf48fd2d055366abaf2c1",
+      "id": "iterative__dvc_2.19.0_2.20.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "512bfc4305a7607f63514dc734663c973ed954b2",
+      "id": "iterative__dvc_2.21.1_2.21.2",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "2485779d59143799d4a489b42294ee6b7ce52a80",
+      "id": "iterative__dvc_2.5.0_2.5.1",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "6d783b8d97fa29387d064d7340bbc610afaf6938",
+      "id": "iterative__dvc_2.58.1_2.58.2",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "31479f02ab42eb985c1dac7af3e619112e41a439",
+      "id": "iterative__dvc_2.7.2_2.7.3",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "4762c38ff77f7696eb586a464dd4b2e2a2344c3b",
+      "id": "iterative__dvc_2.8.1_2.8.2",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "43b371c43a090a5c05344f93538c7114a150319b",
+      "id": "iterative__dvc_3.12.0_3.13.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "c71b07b99622ab37138d6d63f611a532c1dda142",
+      "id": "iterative__dvc_3.13.3_3.14.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "a051b8b60f5ca7268ff1b1f7e8454f703a5539c6",
+      "id": "iterative__dvc_3.15.0_3.15.1",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "8661abf2244d75a3fe3e314284a498bc6ec2a796",
+      "id": "iterative__dvc_3.4.0_3.5.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "84b2e685e25c31fc1296d2902c728d84785a656d",
+      "id": "iterative__dvc_3.43.1_3.44.0",
+      "repo": "iterative/dvc"
+    },
+    {
+      "base_commit": "22ce95e78b4db2f21d5940cbd8ee656e7e565d15",
+      "id": "modin-project__modin_0.24.0_0.24.1",
+      "repo": "modin-project/modin"
+    },
+    {
+      "base_commit": "e12b21703494dcbb8f7aa951b40ebe1d033307ba",
+      "id": "modin-project__modin_0.25.0_0.25.1",
+      "repo": "modin-project/modin"
+    },
+    {
+      "base_commit": "d54dcfd8e4cceecdbf818a48bbc712854dda906e",
+      "id": "modin-project__modin_0.27.0_0.27.1",
+      "repo": "modin-project/modin"
+    },
+    {
+      "base_commit": "ca15d4808734c86801c8f3d80c9152c35a163dc3",
+      "id": "psf__requests_v2.12.2_v2.12.3",
+      "repo": "psf/requests"
+    },
+    {
+      "base_commit": "0192aac24123735b3eaf9b08df46429bb770c283",
+      "id": "psf__requests_v2.27.0_v2.27.1",
+      "repo": "psf/requests"
+    },
+    {
+      "base_commit": "95161ed313db11296c3bd473336340dbb19bb347",
+      "id": "psf__requests_v2.4.0_v2.4.1",
+      "repo": "psf/requests"
+    },
+    {
+      "base_commit": "5f7a3a74aab1625c2bb65f643197ee885e3da576",
+      "id": "psf__requests_v2.9.0_v2.9.1",
+      "repo": "psf/requests"
+    },
+    {
+      "base_commit": "e131d53a07da080c2ba642775efa9e81cb2cf0ba",
+      "id": "pydantic__pydantic_v2.6.0b1_v2.6.0",
+      "repo": "pydantic/pydantic"
+    },
+    {
+      "base_commit": "7af856a1098406aea84bcadfd0f3de6b7901526c",
+      "id": "pydantic__pydantic_v2.7.0_v2.7.1",
+      "repo": "pydantic/pydantic"
+    },
+    {
+      "base_commit": "26129479a06960af9d02d3a948e51985fe59ed4b",
+      "id": "pydantic__pydantic_v2.7.1_v2.7.2",
+      "repo": "pydantic/pydantic"
+    },
+    {
+      "base_commit": "55bf5d93e5674f13a1134d93a11fd0cd11aabcd1",
+      "id": "scikit-learn__scikit-learn_0.20.1_0.20.2",
+      "repo": "scikit-learn/scikit-learn"
+    },
+    {
+      "base_commit": "b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab",
+      "id": "scikit-learn__scikit-learn_0.21.1_0.21.2",
+      "repo": "scikit-learn/scikit-learn"
+    }
+  ]
+}

@@ -1,0 +1,365 @@
+# SWE-EVO experiment setup
+
+Status: preparation only. No benchmark trajectory or evaluation has been run.
+Do not start the full experiment until the owner approves its cost and the
+blocking items below are resolved.
+
+Run `python3 scripts/arcade/preflight.py` for read-only preliminary checks.
+It checks Codex availability and selected evaluator prerequisites. It exits
+nonzero even if its checks pass and is not the experiment runner.
+The login status refers only to the current environment and does not establish
+that a separate benchmark home can access the model. ChatGPT login is not
+required for the OpenRouter route and does not test its API key.
+
+After obtaining the pinned public JSONL, `python3 scripts/arcade/prepare_dataset.py
+PATH_TO_JSONL NEW_PRIVATE_OUTPUT_DIRECTORY` verifies its SHA-256 and creates
+48 evaluator records in a new directory outside this checkout. The records
+contain gold data. File permissions alone do not isolate processes running as
+the same user: the agent's container must not mount or otherwise access this
+directory. This preparation does not establish evaluator correctness.
+
+`python3 scripts/arcade/prepare_tasks.py PATH_TO_JSONL NEW_TASK_INPUT_DIRECTORY`
+uses the same pinned dataset validation and exports only the instance ID,
+repository, base commit and benchmark-provided problem statement. It does not
+copy evaluator patch or test fields. The directory must be separately mounted
+into the agent environment; file modes alone do not prevent a process running
+as the same user from reading evaluator data. This extractor does not establish
+isolation or sanitize the benchmark statement.
+
+`python3 scripts/arcade/cohort.py verify --dataset PATH_TO_JSONL --manifest
+docs/arcade/cohort.json` verifies that all 48 IDs, repositories and base commits
+match the pinned dataset. The committed manifest contains only these identity
+fields and has SHA-256
+`94c692e79b2d55e85bae65f3a251bded0c68100cf35bba3879a12617cba8386d`.
+The `create` action writes a new manifest without evaluator answers. It must
+read the private dataset outside the agent environment and does not validate
+the images, contracts, trajectories or evaluator outcomes.
+
+`scripts/arcade/snapshot.py` is a preliminary macOS helper for materializing
+an exact base from Git blobs into a new empty workspace with no original Git
+history or remote. It verifies blob IDs and the resulting tree; it rejects
+symlinks, submodules, unsupported names and oversized inputs. A clean/dirty
+control and the Requests base `ca15d4808734c86801c8f3d80c9152c35a163dc3`
+matched Git tree `ed5a1585a8be3af46f525730afb5db31b3825812` with 149 files.
+The earlier `git add` approach failed on the Modin base because attributes
+changed five blobs. The helper now hashes files with filters disabled and
+constructs the index from verified blobs. Requests, DVC and Modin base trees
+matched in local controls; a CRLF fixture and a Modin patch round-trip retained
+the expected bytes. It rejects filenames incompatible with its line-based Git
+input rather than silently modifying them.
+This helper does not isolate the workspace or implement the agent runner.
+The caller must create and protect the workspace and clean up on errors. It
+may reject other benchmark bases, which must not be silently omitted.
+
+`scripts/arcade/candidate.py` is a preliminary independent patch-capture helper.
+It examines file contents rather than relying on the agent's Git metadata,
+rejects unsafe filesystem entries, reconstructs a patch using a separate index
+and verifies its round-trip tree. It can materialize the captured bytes for a
+guard and recheck their hash. The caller must stop the agent and tools first,
+protect the temporary directories and run the guard on that capture. Repeated
+scans do not prevent a same-user adversary from changing and restoring files
+between checks; neither helper is a benchmark driver.
+On the real Modin base, a synthetic change to a CRLF file was captured, applied
+to a separate base workspace and compared byte-for-byte with the candidate.
+
+`scripts/arcade/prepare_predictions.py --manifest MANIFEST --records PATCHES
+--output PREDS_JSON` exports completed Codex patches to the existing evaluator's
+SWE-agent `preds.json` shape and refuses missing or duplicate manifest IDs.
+An empty patch is a completed no-change prediction, distinct from a missing
+trajectory. This adapter has not been tested with the actual evaluator. Because
+the evaluator merges the test patch into the submitted patch, its patch-exists
+field alone does not prove that an agent produced a nonempty code patch.
+
+## Sources and licences
+
+- SWE-EVO source inspected at commit
+  [`9b83d5af943ba7a17567336f5b18239f73960219`](https://github.com/SWE-EVO/SWE-EVO/tree/9b83d5af943ba7a17567336f5b18239f73960219).
+  The root [LICENSE](../../LICENSE) is MIT; retain the copyright and permission
+  notice when distributing copies or substantial portions. The pinned Hugging
+  Face dataset card declares `apache-2.0` in its metadata but says MIT in its
+  prose: this conflict is unresolved and needs clarification before redistribution.
+  Embedded components have their own licences: [OpenHands/LICENSE](../../OpenHands/LICENSE) is MIT
+  outside `enterprise/`, which has a separate licence; consult the applicable
+  licences for the dataset, images, seven repositories and dependencies too.
+- Paper: [SWE-EVO, arXiv:2512.18470v6](https://arxiv.org/abs/2512.18470v6),
+  22 May 2026; the arXiv page identifies a perpetual non-exclusive distribution
+  licence for the paper. This is separate from the source-code licence.
+- The paper describes 48 release-transition tasks in seven Python repositories:
+  dvc (26), dask (8), requests (4), pydantic (3), modin (3), conan (2), and
+  scikit-learn (2). Repository proportions are imbalanced.
+
+## Scaffold and infrastructure
+
+The owner switched the model route to **OpenRouter with a free model first**.
+The candidate for both arms is `cohere/north-mini-code:free`, served by
+Cohere; the choice supersedes the earlier GPT-6 Luna subscription plan. Retain
+Codex CLI as the candidate scaffold, subject to a real integration canary.
+There are three independent repetitions per task. Repetition identifiers are
+not model seeds. Codex is a deviation from the
+paper's OpenHands/SWE-agent setup; report it explicitly and do not attribute
+differences between separate scaffolds to ARCADE. The paper's OpenHands
+100-iteration limit is not automatically equivalent to a Codex budget. Define
+and validate equal limits for both Codex arms before the experiment.
+
+`python3 scripts/arcade/openrouter_probe.py` reads the live endpoint metadata;
+`--smoke` also sends a single synthetic tool request using `OPENROUTER_API_KEY`
+from the environment. It limits the request to Cohere, disables fallback and
+requests zero maximum price. The probe is not the Codex runner; it must not be
+used as evidence that those restrictions are enforced in the agent loop.
+Synthetic requests through the API were observed with cost zero; the
+script's Responses smoke test called the expected tool, and an invalid provider
+was rejected with HTTP 404. No SWE-EVO agent trajectory was run. Current
+[model metadata](https://openrouter.ai/cohere/north-mini-code:free) indicates
+tool calling and 256K context, while availability and pricing can change.
+The [sanitized smoke summary](openrouter-smoke-summary.jsonl) records synthetic
+Responses and Codex tool checks, not benchmark results or full API transcripts.
+A Responses request with `seed=17` and `temperature=0` completed with the
+expected tool call and reported zero cost. Acceptance alone does not prove the
+backend applied those settings; neither has been verified through Codex.
+
+Record the Codex CLI version, exact model and endpoint, provider, sampling
+settings, repetition, environment, response usage and observable backend
+version. OpenRouter advertises seed and temperature on the model's chat endpoint,
+but neither setting is yet verified through Codex/Responses; do not claim fixed
+sampling or reproducibility. The final runner must enforce the fixed model,
+provider and zero-price budget for every request, fail closed on changes and
+record actual usage. OpenRouter lists Cohere as retaining prompts for 30 days
+and the free endpoint is not in its ZDR list. Only public benchmark material
+may be sent; isolate gold, credentials and internal files from the agent and
+MCP process. See [provider data practices](https://openrouter.ai/providers).
+
+A synthetic Codex-to-mock-provider check observed that the request body can
+include the absolute workspace path even when the prompt is synthetic. Do not
+point the actual model at a workspace whose path exposes user or internal
+information. Before the real agent canary, verify the entire outgoing request
+and tool context with neutral paths and a mock provider. Do not rely on the
+command sandbox to redact request metadata.
+In a subsequent synthetic Codex canary using a neutral `/private/tmp` path and
+a mock provider, a marker scan found no user or private-path markers; the shell
+tool could read its workspace, could not read a private sibling marker, and
+did not receive the mock provider token in its environment. This bounded scan
+cannot prove that every sensitive value is absent, or validate the real MCP
+server and request proxy.
+
+A separate synthetic live Codex loop used a local prototype relay, a clean
+neutral workspace, a three-request cap, the free model and Cohere-only
+zero-price routing. With Codex's `parallel_tool_calls` field unchanged,
+OpenRouter returned HTTP 404 under `require_parameters`; a diagnostic relay
+omitted that field and the synthetic loop then completed after three HTTP 200
+responses. Its tool read the synthetic workspace, was denied the synthetic
+private sibling and did not see either relay token or API-key environment
+variables. The stream's final cost was not captured; the earlier direct
+Responses smoke reported zero. This intervention changes request semantics and
+has not been validated for benchmark trajectories. The relay and launcher
+remain local prototypes, the marker scan is incomplete, and real ARCADE MCP,
+coverage, final pricing, retries and isolation remain unverified. Do not use
+this canary as an experiment runner.
+
+MCP connectivity, visibility of the task checkout,
+a mandatory pre-submit check, and the two-repair limit have **not** been
+demonstrated in this evaluation runtime. A configuration field or prompt alone
+does not prove enforcement.
+
+In an offline synthetic check, `--ignore-user-config` was not enough to prevent
+global `AGENTS.md` discovery; setting `project_doc_max_bytes=0` suppressed the
+project marker but not the global marker. A separate clean Codex home needs a
+reviewed instruction context and safe API authentication before agent runs.
+Do not copy host credentials into the workspace or expose evaluator gold;
+sandbox access and the MCP subprocess need separate canaries.
+
+A macOS-only canary started the pinned ARCADE MCP server inside a Codex
+command sandbox with synthetic data and a minimized environment. Parsing the
+workspace succeeded; parsing a sibling fake gold directory or a symlink to it
+returned no entities and did not reveal the marker. Both denied-path calls
+nevertheless returned `isError=false`, so a driver must treat an empty graph
+or unverified coverage as unscorable. The canary allowed read access to
+`/opt/homebrew` for local Python dependencies and does not prove complete
+filesystem isolation, Linux/Docker behavior, authentication safety, or the
+actual experiment configuration.
+In a second canary, parsing a workspace with one readable Python file and a
+symlink to a denied sibling returned a nonempty graph for the readable file
+without reporting the denied file. Thus a nonempty graph also does not prove
+complete coverage; snapshot identity and independent file/edge coverage checks
+are required before trusting a guard decision.
+
+Another synthetic macOS command-sandbox canary denied path and symlink access
+to a private sibling and denied local TCP and Unix socket connections. It also
+showed that a private file descriptor deliberately inherited from the parent
+remained readable, while the same descriptor was unavailable with `pass_fds=()`;
+a synthetic file under `/tmp` was readable in the tested profile. Keep gold
+and credentials out of shared temporary paths, close unneeded inherited
+descriptors, and repeat canaries with the actual launcher and MCP process. This
+does not establish complete isolation or keychain protection.
+In a follow-up synthetic `codex sandbox` test, explicitly denying `:tmpdir` and
+`:slash_tmp` blocked that temporary-file read while retaining workspace access;
+an inherited descriptor remained readable. The actual `codex exec` tool loop
+and MCP process have not been shown to use this profile.
+A separate no-model app-server canary with a synthetic clean Codex home
+reported the configured profile on `thread/start`; a standalone `command/exec`
+read its workspace marker and was denied a private sibling marker. Two runs
+matched. This does not establish that shell or patch tools in an actual model
+turn, MCP, credential access or all filesystem paths use the same protections.
+
+`scripts/arcade/guard.py` provides a preliminary decision function for supported
+contracts. It compares MCP findings with the frozen baseline and checks edge
+rules against the ARCADE conformance source hash at commit
+`0c5a2b7dac0baf2c406b48781433dd9463b017b3`. A missing finding or incomplete
+coverage is unscorable. The function relies on caller-supplied snapshot hashes,
+repair count and coverage evidence: it does not itself bind MCP to the tree,
+prove isolation, call Codex, or enforce a submission boundary. The eventual
+driver must pin the entire ARCADE runtime, not just this checked source file.
+Persistent baseline findings are also unscorable: component-level aggregation
+can hide a newly introduced underlying dependency on the same component pair.
+
+`scripts/arcade/recovery_probe.py` examines one clean source checkout at an
+explicit base SHA, checks the ARCADE source tree hash, and compares two cold
+package recoveries. It records files with entities split across recovered
+components and selected files with no entities; it does not create a contract.
+For the public Requests base `ca15d4808734c86801c8f3d80c9152c35a163dc3`,
+ARCADE `0c5a2b7dac0baf2c406b48781433dd9463b017b3` selected 94 of 106
+tracked Python files, assigned 816 entities and 770 edges, and split entities
+from six files across components. Eight selected files had no entities;
+relation coverage was not reported. Two outputs had matching normalized SHA-256
+`6968cd35fa9a8ed6d1f1719b8b3eb768190aa533b48adaef47e85dae82f0f5a4`.
+This observation used Python 3.12.11, networkx 3.6.1, tree-sitter 0.25.2 and
+tree-sitter-python 0.25.0, with tests excluded. The guard maps by file, so it
+cannot exactly express these six split files. This is not a complete coverage
+assessment or evidence for the other 47 bases.
+The subsequent descriptive scan of all 48 bases is documented in
+[RECOVERY.md](RECOVERY.md); it does not produce enforceable contracts.
+
+The root project specifies Python 3.10+; the vendored OpenHands
+`pyproject.toml` specifies Python >=3.12,<3.14. The root README gives
+`pip install -e .` and requires a compatible scaffold. Use isolated,
+version-locked environments rather than installing into a shared interpreter.
+The SWE-EVO evaluator uses Docker, pulls the instance `image` references,
+retags images and invokes the SWE-bench harness. Image digests, scaffold and
+dependency versions must be pinned and recorded before data collection.
+
+The vendored SWE-bench README recommends x86_64, at least 120 GB free disk,
+16 GB RAM and 8 CPU cores for SWE-bench; it calls ARM64 support experimental.
+Those are upstream SWE-bench recommendations, **not measured SWE-EVO sizing**.
+On the inspected host, Docker reported server 28.5.1 and `aarch64`. A minimal
+`linux/amd64` Alpine 3.20 container (image ID
+`sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc`)
+ran with no network and reported `x86_64`. This is an emulation canary, not a
+SWE-EVO image, test, benchmark or performance validation. Validate the actual
+image, architecture, available storage and worker concurrency on the execution
+host, and record image pull, CPU and memory costs. The evaluator labels images
+x86_64; do not assume an ARM run is equivalent.
+The DVC candidate image was pulled locally at manifest digest
+`sha256:ec5529447ac44ca5836d4b9fbf5a86eaa869dd5ca4c5e2601aaedffe89a4101b`;
+Docker reports `linux/amd64` and size 1,377,277,308 bytes. Pulling and
+inspecting an image does not establish that its evaluator or tests work.
+
+Keep credentials outside the repository and pass them through the environment;
+only public benchmark data and approved experiment artifacts may leave the
+machine. Inspect the data and logs for secrets and internal information before
+publishing a branch or PR. Limit access and network egress for execution of
+untrusted benchmark code and pin the provider and approved data destination.
+
+## Reproducibility blockers in the inspected snapshot
+
+- The README's OpenHands command refers to
+  `OpenHands/evaluation/benchmarks/swe_bench/scripts/run_infer.sh`, but
+  `OpenHands/evaluation/` is absent at this commit. Obtain and pin a compatible
+  evaluation scaffold from an authoritative source to reproduce that separate
+  OpenHands path. This is not a prerequisite for the approved Codex path;
+  the Codex inference adapter and its output-to-evaluator mapping still need
+  implementation and single-task validation.
+  Candidate source: [OpenHands 0.58.0 at `acc427e15f4f2bdd5bf6ceed368888f3379f88a5`](https://github.com/OpenHands/OpenHands/tree/acc427e15f4f2bdd5bf6ceed368888f3379f88a5/evaluation).
+  The vendored version number, `pyproject.toml` and `poetry.lock` match this
+  tag, as do the inspected CodeActAgent and controller files. However, 17
+  tracked Python files under `openhands/` differ, including LLM and runtime
+  code; the complete source trees do not match. Compatibility and licensing
+  of the recovered files must be checked, then the path exercised; this is
+  a candidate, not a verified replacement. OpenHands' own licence applies to
+  its source, with a separate enterprise licence; retain applicable notices.
+- The SWE-EVO README's nine-argument OpenHands example does not match the
+  [candidate script's ten-argument interface](https://github.com/OpenHands/OpenHands/blob/acc427e15f4f2bdd5bf6ceed368888f3379f88a5/evaluation/benchmarks/swe_bench/scripts/run_infer.sh):
+  `MAX_ITER` is the fifth argument, followed by workers, dataset, split,
+  number of runs and mode. Inserting `100` as the fifth argument is necessary
+  for this candidate's interface, but does not prove the script works with the
+  vendored scaffold or dataset. Its helper can switch Git revisions, so use an
+  isolated checkout. The candidate
+  [inference adapter explicitly disables MCP](https://github.com/OpenHands/OpenHands/blob/acc427e15f4f2bdd5bf6ceed368888f3379f88a5/evaluation/benchmarks/swe_bench/run_infer.py#L254-L263);
+  enabling MCP and an enforced finish/check/repair hook require implementation
+  and runtime verification. Merely adding MCP configuration is insufficient.
+- The README points to `hf_out/hf_jsonl`, which is absent from the GitHub
+  snapshot. The public [Hugging Face dataset](https://huggingface.co/datasets/Fsoft-AIC/SWE-EVO/tree/77310c70d3648d6815f6a7555ecc492bc28c44ec)
+  at revision `77310c70d3648d6815f6a7555ecc492bc28c44ec` contains
+  `SWE-EVO/hf_jsonl/test.jsonl` (SHA-256
+  `a5dc7fccf7d839140e2005b09937e0f83910a61518027ef72d42134542246f87`)
+  and a complete `SWE-EVO/hf_dataset/` metadata tree. The JSONL inspection
+  found 48 unique path-safe instance IDs and 48 distinct repository/base-commit
+  pairs. All base commits have the shape of a full Git SHA; this is not proof
+  that those commits, images, test metadata or task contents are correct.
+  The pinned Hugging Face Arrow SHA-256
+  `9e571749b6d1e52526b0ecbe078594a6d2522333e39f5463105868ebef5346ba`
+  differs from the checked-in GitHub Arrow SHA-256
+  `74e7c63160ada4ceba71d5d89a9bb7c9794f4574b384458d546eb65cdb730520`;
+  do not mix the two snapshots without validating their contents.
+- `SWE-bench/evaluate_instance.py` reads `output_final/*.json`, which is absent
+  from the GitHub commit. The pinned JSONL has the fields needed to attempt
+  one-to-one derivation of these records. Validate schema, unique safe IDs,
+  repo/base identity, image digests, test patch and test lists, and the
+  evaluator's repo/version mappings. The source inspection does not prove
+  that reconstruction or evaluation works. Validate the actual evaluator on a
+  clean control and a known failing patch before using aggregate metrics.
+  Missing trajectories and infrastructure failures must be recorded explicitly,
+  not treated as measured failures or silently omitted.
+- A source-level check found that the vendored grading helper omits `SKIPPED`
+  cases from both success and failure lists, while an empty list gives a score
+  of 1; it also treats `XFAIL` as passing. An all-skipped FAIL_TO_PASS set can
+  make the evaluator's Fix Rate division have a zero denominator. Preserve the
+  official output, but independently verify each expected test's parsed status,
+  report missing, skipped and expected-failure cases, and do not label them
+  as verified ordinary passes. Parser-to-evaluator and container behavior
+  remain unverified; see `SWE-bench/swebench/harness/grading.py` and
+  `SWE-bench/evaluate_instance.py` at the pinned revision.
+  `scripts/arcade/check_test_status.py` is a separate strict audit for an
+  explicitly supplied gold test list and parsed status map. It marks missing,
+  skipped, XFAIL, other ambiguous statuses and empty test groups unscorable,
+  including the one task with no PASS_TO_PASS coverage. Its outputs do not
+  replace the official benchmark scores and do not validate log provenance.
+- The JSONL contains gold `patch`, `all_patch` and `test_patch` fields. Keep
+  gold and evaluator-only fields inaccessible to the coding agent and restrict
+  its input to approved task context; audit for other answer leakage before
+  launching. One task has an empty `PASS_TO_PASS` list, so no regression
+  coverage can be inferred for that instance.
+- The earlier OpenHands option has `temperature` and `seed` fields, but its
+  `openhands/llm/retry_mixin.py` can change temperature on a no-response retry.
+  The approved Codex setup makes no fixed-temperature or fixed-seed claim;
+  record repetition identifiers as labels only and do not describe them as
+  model seeds. Verify the model and effort actually used by the Codex runtime.
+- For each task's exact base commit, reconstruct and freeze the architecture
+  contract before either arm runs. A seven-repository inventory is not a
+  substitute for contracts keyed to every distinct task base. Verify the
+  contract's hash, provenance, parser coverage, and conformance behavior on
+  clean and planted-violation controls.
+- ARCADE recovers components at entity granularity while its conformance
+  mapping uses file globs; entities within one file can map to distinct recovered
+  components. Verify faithful mapping against each real base before creating
+  enforceable rules. A package layout or absent dependency alone does not prove
+  a forbidden dependency; unresolved rules and uncovered code are not passes.
+- Owner decision: encode only architecture rules supported by evidence from the
+  repository at the task base. A new inter-package dependency is not itself a
+  violation merely because it did not exist at baseline. Keep the recovered
+  graph for descriptive metrics, record each enforced rule's source and scope,
+  and mark a task without supported, representable rules as unscorable for the
+  guard comparison rather than manufacturing a violation policy. See
+  [RULE_EVIDENCE.md](RULE_EVIDENCE.md) for the scoped review of all 48 bases.
+
+## Benchmark interpretation
+
+A task resolves only when all `FAIL_TO_PASS` and `PASS_TO_PASS` tests pass.
+Per-instance strict Fix Rate is the proportion of `FAIL_TO_PASS` tests passing
+if every `PASS_TO_PASS` test passes, and zero if any regress; the benchmark
+averages instance scores. Keep test execution or parser failures separate from
+actual test failures. These measures do not establish architecture quality.
+The proposed sequential-release experiment is a separate extension, not the
+official protocol. Training-data contamination, parser coverage, only seven
+Python libraries and small per-repository sample sizes limit interpretation.
+
+See [EVALUATOR-CONTROLS.md](EVALUATOR-CONTROLS.md) for the separate Requests
+gold/empty grading controls and unresolved test-environment failures.
