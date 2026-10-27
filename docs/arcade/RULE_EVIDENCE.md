@@ -50,6 +50,10 @@ below apply to the linked exact revisions and cited scope only.
   deliberately imports that symbol in its wrapper with a
   [`noqa: TID251` exception](https://github.com/iterative/dvc/blob/84b2e685e25c31fc1296d2902c728d84785a656d/dvc/utils/objects.py#L6),
   so even a symbol checker must preserve the repository's exception semantics.
+  A separate full-checkout baseline with the same Ruff pin and TID251 selection
+  selected 545 files and returned zero findings twice, with identical normalized
+  JSON hashes. This host-only check does not establish the image environment or
+  demonstrate that ARCADE itself enforces this rule.
   A follow-up scan found `test_no_remote_imports` in 22 of the 26 DVC bases;
   for example, [this test](https://github.com/iterative/dvc/blob/84b2e685e25c31fc1296d2902c728d84785a656d/tests/unit/test_imports.py#L5)
   verifies optional remote modules remain unloaded after a CLI import. That

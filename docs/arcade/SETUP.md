@@ -69,6 +69,13 @@ a mandatory pre-submit check, and the two-repair limit have **not** been
 demonstrated in this evaluation runtime. A configuration field or prompt alone
 does not prove enforcement.
 
+In an offline synthetic check, `--ignore-user-config` was not enough to prevent
+global `AGENTS.md` discovery; setting `project_doc_max_bytes=0` suppressed the
+project marker but not the global marker. A separate clean Codex home needs a
+supported authentication path and reviewed instruction context before model
+calls. Do not copy host credentials or expose evaluator gold to the agent;
+sandbox access and the MCP subprocess need separate canaries.
+
 `scripts/arcade/guard.py` provides a preliminary decision function for supported
 contracts. It compares MCP findings with the frozen baseline and checks edge
 rules against the ARCADE conformance source hash at commit
@@ -225,3 +232,6 @@ actual test failures. These measures do not establish architecture quality.
 The proposed sequential-release experiment is a separate extension, not the
 official protocol. Training-data contamination, parser coverage, only seven
 Python libraries and small per-repository sample sizes limit interpretation.
+
+See [EVALUATOR-CONTROLS.md](EVALUATOR-CONTROLS.md) for the separate Requests
+gold/empty grading controls and unresolved test-environment failures.
