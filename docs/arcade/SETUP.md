@@ -104,11 +104,14 @@ dependency versions must be pinned and recorded before data collection.
 The vendored SWE-bench README recommends x86_64, at least 120 GB free disk,
 16 GB RAM and 8 CPU cores for SWE-bench; it calls ARM64 support experimental.
 Those are upstream SWE-bench recommendations, **not measured SWE-EVO sizing**.
-On the inspected host, Docker reported server 28.5.1 and `aarch64`; no image,
-container, benchmark or timing validation was performed. Validate architecture,
-available storage and worker concurrency on the actual execution host, and
-record image pull, CPU and memory costs. The evaluator labels images x86_64;
-do not assume an ARM run is equivalent.
+On the inspected host, Docker reported server 28.5.1 and `aarch64`. A minimal
+`linux/amd64` Alpine 3.20 container (image ID
+`sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc`)
+ran with no network and reported `x86_64`. This is an emulation canary, not a
+SWE-EVO image, test, benchmark or performance validation. Validate the actual
+image, architecture, available storage and worker concurrency on the execution
+host, and record image pull, CPU and memory costs. The evaluator labels images
+x86_64; do not assume an ARM run is equivalent.
 
 Keep credentials outside the repository and pass them through the environment;
 only public benchmark data and approved experiment artifacts may leave the
@@ -175,6 +178,11 @@ untrusted benchmark code and pin the provider and approved data destination.
   as verified ordinary passes. Parser-to-evaluator and container behavior
   remain unverified; see `SWE-bench/swebench/harness/grading.py` and
   `SWE-bench/evaluate_instance.py` at the pinned revision.
+  `scripts/arcade/check_test_status.py` is a separate strict audit for an
+  explicitly supplied gold test list and parsed status map. It marks missing,
+  skipped, XFAIL, other ambiguous statuses and empty test groups unscorable,
+  including the one task with no PASS_TO_PASS coverage. Its outputs do not
+  replace the official benchmark scores and do not validate log provenance.
 - The JSONL contains gold `patch`, `all_patch` and `test_patch` fields. Keep
   gold and evaluator-only fields inaccessible to the coding agent and restrict
   its input to approved task context; audit for other answer leakage before
