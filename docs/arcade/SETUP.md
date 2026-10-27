@@ -35,6 +35,16 @@ The `create` action writes a new manifest without evaluator answers. It must
 read the private dataset outside the agent environment and does not validate
 the images, contracts, trajectories or evaluator outcomes.
 
+`scripts/arcade/snapshot.py` is a preliminary macOS helper for materializing
+an exact base from Git blobs into a new empty workspace with no original Git
+history or remote. It verifies blob IDs and the resulting tree; it rejects
+symlinks, submodules, unsupported names and oversized inputs. A clean/dirty
+control and the Requests base `ca15d4808734c86801c8f3d80c9152c35a163dc3`
+matched Git tree `ed5a1585a8be3af46f525730afb5db31b3825812` with 149 files.
+This helper does not isolate the workspace or implement the agent runner.
+The caller must create and protect the workspace and clean up on errors. It
+may reject other benchmark bases, which must not be silently omitted.
+
 `scripts/arcade/prepare_predictions.py --manifest MANIFEST --records PATCHES
 --output PREDS_JSON` exports completed Codex patches to the existing evaluator's
 SWE-agent `preds.json` shape and refuses missing or duplicate manifest IDs.
@@ -84,9 +94,11 @@ script's Responses smoke test called the expected tool, and an invalid provider
 was rejected with HTTP 404. No SWE-EVO agent trajectory was run. Current
 [model metadata](https://openrouter.ai/cohere/north-mini-code:free) indicates
 tool calling and 256K context, while availability and pricing can change.
-The [sanitized smoke summary](openrouter-smoke-summary.jsonl) records one
-synthetic Responses call and one synthetic Codex tool loop, not benchmark
-results or full API transcripts.
+The [sanitized smoke summary](openrouter-smoke-summary.jsonl) records synthetic
+Responses and Codex tool checks, not benchmark results or full API transcripts.
+A Responses request with `seed=17` and `temperature=0` completed with the
+expected tool call and reported zero cost. Acceptance alone does not prove the
+backend applied those settings; neither has been verified through Codex.
 
 Record the Codex CLI version, exact model and endpoint, provider, sampling
 settings, repetition, environment, response usage and observable backend
