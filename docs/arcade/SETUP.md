@@ -76,6 +76,21 @@ supported authentication path and reviewed instruction context before model
 calls. Do not copy host credentials or expose evaluator gold to the agent;
 sandbox access and the MCP subprocess need separate canaries.
 
+A macOS-only canary started the pinned ARCADE MCP server inside a Codex
+command sandbox with synthetic data and a minimized environment. Parsing the
+workspace succeeded; parsing a sibling fake gold directory or a symlink to it
+returned no entities and did not reveal the marker. Both denied-path calls
+nevertheless returned `isError=false`, so a driver must treat an empty graph
+or unverified coverage as unscorable. The canary allowed read access to
+`/opt/homebrew` for local Python dependencies and does not prove complete
+filesystem isolation, Linux/Docker behavior, authentication safety, or the
+actual experiment configuration.
+In a second canary, parsing a workspace with one readable Python file and a
+symlink to a denied sibling returned a nonempty graph for the readable file
+without reporting the denied file. Thus a nonempty graph also does not prove
+complete coverage; snapshot identity and independent file/edge coverage checks
+are required before trusting a guard decision.
+
 `scripts/arcade/guard.py` provides a preliminary decision function for supported
 contracts. It compares MCP findings with the frozen baseline and checks edge
 rules against the ARCADE conformance source hash at commit
