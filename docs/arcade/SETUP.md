@@ -8,7 +8,8 @@ Run `python3 scripts/arcade/preflight.py` for read-only preliminary checks.
 It checks Codex availability and selected evaluator prerequisites. It exits
 nonzero even if its checks pass and is not the experiment runner.
 The login status refers only to the current environment and does not establish
-that a separate benchmark home is logged in or can access the model.
+that a separate benchmark home can access the model. ChatGPT login is not
+required for the OpenRouter route and does not test its API key.
 
 After obtaining the pinned public JSONL, `python3 scripts/arcade/prepare_dataset.py
 PATH_TO_JSONL NEW_PRIVATE_OUTPUT_DIRECTORY` verifies its SHA-256 and creates
@@ -62,28 +63,70 @@ field alone does not prove that an agent produced a nonempty code patch.
 
 ## Scaffold and infrastructure
 
-The user approved **Codex CLI in both arms**, using `gpt-6-luna` with
-`model_reasoning_effort="low"` and three independent repetitions per task.
-This replaces the previously proposed OpenHands scaffold and relaxes the
-fixed-seed and fixed-temperature requirements: repetitions are not seed values,
-and neither sampling control is asserted. Codex is a deviation from the
+The owner switched the model route to **OpenRouter with a free model first**.
+The candidate for both arms is `cohere/north-mini-code:free`, served by
+Cohere; the choice supersedes the earlier GPT-6 Luna subscription plan. Retain
+Codex CLI as the candidate scaffold, subject to a real integration canary.
+There are three independent repetitions per task. Repetition identifiers are
+not model seeds. Codex is a deviation from the
 paper's OpenHands/SWE-agent setup; report it explicitly and do not attribute
 differences between separate scaffolds to ARCADE. The paper's OpenHands
 100-iteration limit is not automatically equivalent to a Codex budget. Define
 and validate equal limits for both Codex arms before the experiment.
 
-Record the Codex CLI version, model identifier, reasoning effort, provider,
-repetition index, environment and any observable backend version or usage.
-Codex CLI supports choosing the model and reasoning effort, but the inspected
-CLI exposes no verified seed or temperature controls. OpenAI's
-[GPT-6 guidance](https://developers.openai.com/api/docs/guides/latest-model)
-instructs API clients to omit temperature when reasoning is not `none`.
-Backend identity and run-to-run reproducibility remain unverified.
+`python3 scripts/arcade/openrouter_probe.py` reads the live endpoint metadata;
+`--smoke` also sends a single synthetic tool request using `OPENROUTER_API_KEY`
+from the environment. It limits the request to Cohere, disables fallback and
+requests zero maximum price. The probe is not the Codex runner; it must not be
+used as evidence that those restrictions are enforced in the agent loop.
+Synthetic requests through the API were observed with cost zero; the
+script's Responses smoke test called the expected tool, and an invalid provider
+was rejected with HTTP 404. No SWE-EVO agent trajectory was run. Current
+[model metadata](https://openrouter.ai/cohere/north-mini-code:free) indicates
+tool calling and 256K context, while availability and pricing can change.
+The [sanitized smoke summary](openrouter-smoke-summary.jsonl) records one
+synthetic Responses call and one synthetic Codex tool loop, not benchmark
+results or full API transcripts.
 
-The user-approved subscription option uses Codex signed in with ChatGPT;
-usage is drawn from the plan allowance and additional credits may apply
-depending on account settings. Do not use the user's Codex credentials as an
-API key or publish them. MCP connectivity, visibility of the task checkout,
+Record the Codex CLI version, exact model and endpoint, provider, sampling
+settings, repetition, environment, response usage and observable backend
+version. OpenRouter advertises seed and temperature on the model's chat endpoint,
+but neither setting is yet verified through Codex/Responses; do not claim fixed
+sampling or reproducibility. The final runner must enforce the fixed model,
+provider and zero-price budget for every request, fail closed on changes and
+record actual usage. OpenRouter lists Cohere as retaining prompts for 30 days
+and the free endpoint is not in its ZDR list. Only public benchmark material
+may be sent; isolate gold, credentials and internal files from the agent and
+MCP process. See [provider data practices](https://openrouter.ai/providers).
+
+A synthetic Codex-to-mock-provider check observed that the request body can
+include the absolute workspace path even when the prompt is synthetic. Do not
+point the actual model at a workspace whose path exposes user or internal
+information. Before the real agent canary, verify the entire outgoing request
+and tool context with neutral paths and a mock provider. Do not rely on the
+command sandbox to redact request metadata.
+In a subsequent synthetic Codex canary using a neutral `/private/tmp` path and
+a mock provider, a marker scan found no user or private-path markers; the shell
+tool could read its workspace, could not read a private sibling marker, and
+did not receive the mock provider token in its environment. This bounded scan
+cannot prove that every sensitive value is absent, or validate the real MCP
+server and request proxy.
+
+A separate synthetic live Codex loop used a local prototype relay, a clean
+neutral workspace, a three-request cap, the free model and Cohere-only
+zero-price routing. With Codex's `parallel_tool_calls` field unchanged,
+OpenRouter returned HTTP 404 under `require_parameters`; a diagnostic relay
+omitted that field and the synthetic loop then completed after three HTTP 200
+responses. Its tool read the synthetic workspace, was denied the synthetic
+private sibling and did not see either relay token or API-key environment
+variables. The stream's final cost was not captured; the earlier direct
+Responses smoke reported zero. This intervention changes request semantics and
+has not been validated for benchmark trajectories. The relay and launcher
+remain local prototypes, the marker scan is incomplete, and real ARCADE MCP,
+coverage, final pricing, retries and isolation remain unverified. Do not use
+this canary as an experiment runner.
+
+MCP connectivity, visibility of the task checkout,
 a mandatory pre-submit check, and the two-repair limit have **not** been
 demonstrated in this evaluation runtime. A configuration field or prompt alone
 does not prove enforcement.
@@ -91,8 +134,8 @@ does not prove enforcement.
 In an offline synthetic check, `--ignore-user-config` was not enough to prevent
 global `AGENTS.md` discovery; setting `project_doc_max_bytes=0` suppressed the
 project marker but not the global marker. A separate clean Codex home needs a
-supported authentication path and reviewed instruction context before model
-calls. Do not copy host credentials or expose evaluator gold to the agent;
+reviewed instruction context and safe API authentication before agent runs.
+Do not copy host credentials into the workspace or expose evaluator gold;
 sandbox access and the MCP subprocess need separate canaries.
 
 A macOS-only canary started the pinned ARCADE MCP server inside a Codex
