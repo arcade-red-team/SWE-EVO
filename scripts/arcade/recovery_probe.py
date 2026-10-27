@@ -3,8 +3,8 @@
 
 import argparse
 import hashlib
-import importlib
 import importlib.metadata
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -38,11 +38,18 @@ def verify_checkout(root: Path, expected: str) -> None:
 
 
 def verify_arcade() -> dict:
-    package = importlib.import_module("arcade_agent")
-    root = Path(package.__file__).resolve().parent
+    package = importlib.util.find_spec("arcade_agent")
+    if package is None or not isinstance(package.origin, str):
+        raise ValueError("ARCADE source is unavailable")
+    origin = Path(package.origin)
+    if origin.is_symlink():
+        raise ValueError("ARCADE package entry is a symlink")
+    root = origin.resolve().parent
     files = sorted(p for p in root.rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc")
     digest = hashlib.sha256()
     for file in files:
+        if file.is_symlink() or not file.resolve(strict=True).is_relative_to(root):
+            raise ValueError("ARCADE source includes a symlink")
         digest.update(file.relative_to(root).as_posix().encode() + b"\0")
         digest.update(hashlib.sha256(file.read_bytes()).digest())
     actual = digest.hexdigest()

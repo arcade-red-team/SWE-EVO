@@ -87,7 +87,7 @@ ARCADE `0c5a2b7dac0baf2c406b48781433dd9463b017b3` selected 94 of 106
 tracked Python files, assigned 816 entities and 770 edges, and split entities
 from six files across components. Eight selected files had no entities;
 relation coverage was not reported. Two outputs had matching normalized SHA-256
-`761f54904f11e672f56db4aeb3d45bbf8bd1757ce5d26a561fa516492142492a`.
+`6968cd35fa9a8ed6d1f1719b8b3eb768190aa533b48adaef47e85dae82f0f5a4`.
 This observation used Python 3.12.11, networkx 3.6.1, tree-sitter 0.25.2 and
 tree-sitter-python 0.25.0, with tests excluded. The guard maps by file, so it
 cannot exactly express these six split files. This is not a complete coverage
