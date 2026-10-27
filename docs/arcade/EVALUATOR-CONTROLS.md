@@ -85,6 +85,17 @@ uses pytest 7 while the repository requirements pin pytest 2. It is not an
 unmodified official benchmark result and does not demonstrate full old-test
 regression coverage.
 
+A further isolated pytest 2 diagnostic found that the `pytest-httpbin` 0.0.7
+server certificate had expired on 23 June 2025. Lowering the local OpenSSL
+security level exposed the expiry but did not fix the two SSL failures.
+Replacing the certificate in another derived image yielded 245 passed and one
+failed for gold, versus 241 passed and five failed for empty; both had one
+XFAIL and one XPASS. The replacement certificate had a subject alternative
+name, unlike the fixture expected by one warning test, so that remaining
+failure reflects a changed test condition. The upstream parser still missed
+all 113 targets in both runs. This diagnostic is not a valid benchmark score;
+the randomly generated certificate also makes the image build non-reproducible.
+
 The local derived image IDs for the pytest 7 controls were
 `sha256:66b065d28b65aaa27e319edbf4a5670f5673b67566bc2780a9c753fbafce40d5`
 and `sha256:be467e0f6cc8e6511deb2b5684ab955635d874167a2609df04f345321c829fe0`.
