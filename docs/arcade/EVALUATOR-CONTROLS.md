@@ -143,3 +143,25 @@ and Docker SDK 7.1.0 were observed in the host-side evaluator environment; its
 dependencies were not fully pinned. The recorded run durations, about 20–23
 seconds each, include local orchestration and must not be extrapolated to the
 48-task experiment.
+
+## DVC controls
+
+On task `iterative__dvc_3.43.1_3.44.0`, the pinned DVC image was run locally
+as amd64 with no network, no host mounts and all capabilities dropped. An
+adapter assigned the copied patch to the container user so it remained readable;
+this is not the unmodified upstream invocation. Gold and empty completed in
+97.57 and 98.69 seconds. For the 22 expected FAIL_TO_PASS tests, the upstream
+parser reported 2 passed, 19 failed and one missing for gold; for empty it
+reported 21 failed and one missing. All 104 expected PASS_TO_PASS tests were
+parsed as passed in both controls. One expected ID had two parameterized log
+variants; no unverified mapping was applied.
+
+The seven selected test files also reported XPASS cases, and both logs contained
+DNS or connection errors in dependency setup. Gold had 19 ImportErrors for one
+external symbol, but a causal link to the network errors is not established.
+The controls are not valid benchmark scores. The
+[sanitized summaries](dvc-control-summary.jsonl) include an earlier failed
+startup control; raw logs and evaluator-only fields remain private. Python
+3.10.14 and pytest 7.4.4 were observed in the image; host-side orchestration
+used Python 3.12.11 and Docker SDK 7.1.0. SWE-EVO's version lookup chose `3.4`
+for `3.44.0`; the `3.4` and `3.43` specs in the pinned source were identical.

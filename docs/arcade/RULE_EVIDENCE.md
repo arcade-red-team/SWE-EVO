@@ -112,7 +112,13 @@ below apply to the linked exact revisions and cited scope only.
   reverse imports or on dependencies missing from the baseline. A comment at
   [`groupby.py:477–478`](https://github.com/modin-project/modin/blob/22ce95e78b4db2f21d5940cbd8ee656e7e565d15/modin/core/dataframe/algebra/groupby.py#L477-L478)
   also directs a local import to avoid a cycle; it does not ban that dependency
-  at all scopes.
+  at all scopes. On that base, a provisional ARCADE component rule passed the
+  clean checkout and failed a direct module-level import, but missed the same
+  import with an unused alias, in a class body, or through dynamic import. It
+  also failed `if False` and `TYPE_CHECKING` cases, which do not demonstrate an
+  import-time cycle. Two seven-case runs matched after excluding elapsed time.
+  This is a scoped canary, not a faithful enforceable contract or a claim that
+  the repository approves those cases.
 - **scikit-learn: import syntax and test boundaries.** At both
   [`55bf5d93e5674f13a1134d93a11fd0cd11aabcd1`](https://github.com/scikit-learn/scikit-learn/blob/55bf5d93e5674f13a1134d93a11fd0cd11aabcd1/doc/developers/contributing.rst#L648-L656)
   and [`b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab`](https://github.com/scikit-learn/scikit-learn/blob/b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab/doc/developers/contributing.rst#L753-L761),
