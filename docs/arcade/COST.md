@@ -26,6 +26,12 @@ eligibility, trajectory length, retry behavior and queueing remain unmeasured;
 these limits are requests, not trajectories. An estimate of completion time and
 local compute usage requires a bounded pilot.
 
+Even if every one of the 288 initial trajectories used only one request, that
+would require at least 288 requests: six daily allowance windows at 50/day, or
+one at 1,000/day, assuming no other use and uninterrupted availability. Real
+trajectories, repair rounds and retries may need more. This is a mathematical
+lower bound, not a measured duration or a claim about this account's allowance.
+
 The estimate excludes local electricity, storage, network and any optional
 external compute. The inspected host is ARM64 while benchmark images are x86-64;
 emulation and image capacity have not been validated across the suite. Pricing
