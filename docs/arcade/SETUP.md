@@ -118,6 +118,15 @@ a synthetic file under `/tmp` was readable in the tested profile. Keep gold
 and credentials out of shared temporary paths, close unneeded inherited
 descriptors, and repeat canaries with the actual launcher and MCP process. This
 does not establish complete isolation or keychain protection.
+In a follow-up synthetic `codex sandbox` test, explicitly denying `:tmpdir` and
+`:slash_tmp` blocked that temporary-file read while retaining workspace access;
+an inherited descriptor remained readable. The actual `codex exec` tool loop
+and MCP process have not been shown to use this profile.
+A separate no-model app-server canary with a synthetic clean Codex home
+reported the configured profile on `thread/start`; a standalone `command/exec`
+read its workspace marker and was denied a private sibling marker. Two runs
+matched. This does not establish that shell or patch tools in an actual model
+turn, MCP, credential access or all filesystem paths use the same protections.
 
 `scripts/arcade/guard.py` provides a preliminary decision function for supported
 contracts. It compares MCP findings with the frozen baseline and checks edge

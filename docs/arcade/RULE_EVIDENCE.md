@@ -38,6 +38,15 @@ below apply to the linked exact revisions and cited scope only.
   set of heavy or optional modules into `sys.modules`. This is a runtime
   startup constraint, not a prohibition on every static edge between packages.
   It cannot be replaced by an unqualified component-edge ban.
+  A local canary on that base added `import dask.array.core` to
+  `dask/__init__.py`: the observed runtime loaded `dask.array` and `numpy`,
+  while the unmodified base and an `if False` import loaded neither. The pinned
+  ARCADE parser and a provisional component contract returned PASS for all
+  three; entity fields and edge triples had the same hash and no entities were
+  reported for `dask/__init__.py`. Both runtime and parser comparisons were
+  repeated with matching results after removing elapsed time. The runtime used
+  a separate macOS Python 3.12 environment, not the benchmark image. This is a
+  scoped counterexample, not a full parser coverage assessment.
 - **DVC: banned symbol.** At base
   [`84b2e685e25c31fc1296d2902c728d84785a656d`](https://github.com/iterative/dvc/blob/84b2e685e25c31fc1296d2902c728d84785a656d/pyproject.toml#L250-L272),
   Ruff selects the TID family and configures `funcy.cached_property` as a

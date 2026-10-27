@@ -96,6 +96,25 @@ failure reflects a changed test condition. The upstream parser still missed
 all 113 targets in both runs. This diagnostic is not a valid benchmark score;
 the randomly generated certificate also makes the image build non-reproducible.
 
+With another generated certificate preserving the fixture's no-SAN behavior,
+the local pytest 2 diagnostic reported gold: 246 passed, one XFAIL and one
+XPASS; empty: 242 passed, four failed, one XFAIL and one XPASS. The upstream
+parser still recognized none of the 113 target IDs. An experimental post-run
+adapter compared pytest 2 and pytest 7 collections by test name and parameter
+value fingerprints, then mapped log statuses: gold had 4/4 FAIL_TO_PASS and
+109/109 PASS_TO_PASS passing; empty had 0/4 and 109/109, respectively. The
+same image was run twice per control and all 248 mapped test statuses matched.
+The normalized status hashes were
+`9f031150fb7baa8439723e0febd8e388289736a9e9f7ebe6fcbf23733140c533` (gold)
+and `d2e87a73855096436381a93dfcd041962b9ab56dd8a95e4afc12f17103465b7a` (empty).
+The
+adapter rejected ambiguous IDs and conflicting or missing duplicate statuses
+in three synthetic tests. This is a local diagnostic, not an official score:
+the adapter is not integrated into the evaluator, its handling of all pytest
+semantics is unproven, log text can be spoofed by tested code, and the image
+uses a randomly generated certificate and is not yet portably reproducible.
+The adapter, collection data and gold-bearing logs remain local.
+
 The local derived image IDs for the pytest 7 controls were
 `sha256:66b065d28b65aaa27e319edbf4a5670f5673b67566bc2780a9c753fbafce40d5`
 and `sha256:be467e0f6cc8e6511deb2b5684ab955635d874167a2609df04f345321c829fe0`.
