@@ -31,7 +31,8 @@ def git(repo, home, *args):
 
 
 def safe_path(name):
-    if not isinstance(name, str) or not name or "\\" in name or "\x00" in name:
+    if (not isinstance(name, str) or not name or "\\" in name or "\x00" in name
+            or "\n" in name or "\r" in name or name.startswith('"')):
         raise ValueError("invalid archive path")
     path = PurePosixPath(name)
     if path.is_absolute() or any(part in ("", ".", "..") or part.casefold() == ".git" for part in path.parts):
@@ -106,7 +107,20 @@ def materialize(repo, home, workspace, base):
     if stream.read(1):
         raise ValueError("unexpected data after Git objects")
     git(workspace, home, "init", "-q")
-    git(workspace, home, "add", "--force", "--all")
+    paths = b"".join(name.encode("utf-8") + b"\n" for name in files)
+    hash_proc = subprocess.run(["/usr/bin/git", "-C", str(workspace), "hash-object", "-w", "--stdin-paths", "--no-filters"],
+                               input=paths, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                               env=git_env(home), timeout=120, check=False, close_fds=True)
+    hashes = hash_proc.stdout.decode("ascii").splitlines()
+    if hash_proc.returncode or hashes != [oid for _, oid, _ in files.values()]:
+        raise ValueError("workspace object hashes differ from commit")
+    entries = b"".join((mode + " " + oid + "\t").encode("ascii") + name.encode("utf-8") + b"\x00"
+                       for name, (mode, oid, _) in files.items())
+    index_proc = subprocess.run(["/usr/bin/git", "-C", str(workspace), "update-index", "-z", "--index-info"],
+                                input=entries, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                env=git_env(home), timeout=120, check=False, close_fds=True)
+    if index_proc.returncode:
+        raise ValueError("workspace index creation failed")
     # Fixed identity and isolated git config avoid embedding user information.
     git(workspace, home, "-c", "user.name=Benchmark", "-c", "user.email=benchmark@example.invalid",
         "commit", "-qm", "Snapshot")

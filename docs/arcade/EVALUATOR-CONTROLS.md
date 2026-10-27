@@ -165,3 +165,24 @@ startup control; raw logs and evaluator-only fields remain private. Python
 3.10.14 and pytest 7.4.4 were observed in the image; host-side orchestration
 used Python 3.12.11 and Docker SDK 7.1.0. SWE-EVO's version lookup chose `3.4`
 for `3.44.0`; the `3.4` and `3.43` specs in the pinned source were identical.
+
+## Modin controls
+
+Task `modin-project__modin_0.24.0_0.24.1` was evaluated on the local amd64
+image pinned by digest
+`sha256:ed87cfc058358d86faf1c6c0d0828328285bc24f7218a1060bba37d37ed9dd96`,
+without network, host mounts or capabilities. A local adapter copied patches
+into the container; the invocation was not an unmodified upstream run. The
+gold and empty controls completed in 70.00 and 72.34 seconds respectively.
+Both yielded the same parsed results: the one expected FAIL_TO_PASS test
+failed; 30 of 171 PASS_TO_PASS tests passed and 141 failed. Since the gold
+control did not pass and could not be distinguished from empty, these are not
+usable benchmark scores.
+
+Both logs contained connection errors and pip retry or package-resolution
+failures; the cause of each test failure has not been established. The upstream
+script attempts dependency installation with network disabled and does not stop
+immediately on every install error. The
+[sanitized summaries](modin-control-summary.jsonl) exclude task contents and
+gold-bearing logs, which remain private. Resolving and pinning the environment,
+then repeating both controls, is necessary before evaluating agent patches.

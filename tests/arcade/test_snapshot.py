@@ -72,8 +72,34 @@ class SnapshotTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'empty directory'):
             snapshot.materialize(self.repo, self.home, self.work, self.base)
 
+    def test_git_text_auto_preserves_crlf_blob_and_patch_round_trip(self):
+        (self.repo / '.gitattributes').write_text('* text=auto\n')
+        data = b'first\r\nsecond\r\n'
+        path = self.repo / 'raw.txt'
+        path.write_bytes(data)
+        run(self.repo, 'add', '.gitattributes')
+        stored = subprocess.run(['/usr/bin/git', '-C', str(self.repo), 'hash-object', '-w', '--no-filters', '--stdin'],
+                                input=data, stdout=subprocess.PIPE, check=True).stdout.decode().strip()
+        run(self.repo, 'update-index', '--add', '--cacheinfo', '100644', stored, 'raw.txt')
+        run(self.repo, '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'crlf')
+        self.base = run(self.repo, 'rev-parse', 'HEAD')
+        result = snapshot.materialize(self.repo, self.home, self.work, self.base)
+        self.assertEqual(result['git_tree'], run(self.repo, 'rev-parse', self.base + '^{tree}'))
+        self.assertEqual((self.work / 'raw.txt').read_bytes(), data)
+        self.assertEqual(run(self.work, 'status', '--porcelain'), '')
+        self.assertEqual(run(self.work, 'diff', '--binary'), '')
+        (self.work / 'raw.txt').write_bytes(data + b'third\r\n')
+        patch = snapshot.git(self.work, self.home, 'diff', '--binary')
+        target = self.root / 'target'
+        target.mkdir()
+        snapshot.materialize(self.repo, self.home, target, self.base)
+        patchfile = self.root / 'candidate.patch'
+        patchfile.write_bytes(patch)
+        snapshot.git(target, self.home, 'apply', str(patchfile))
+        self.assertEqual((target / 'raw.txt').read_bytes(), data + b'third\r\n')
+
     def test_names_do_not_escape(self):
-        for bad in ('../x', '/tmp/x', 'a/../x', 'a//x', '.git/config', 'a\\b'):
+        for bad in ('../x', '/tmp/x', 'a/../x', 'a//x', '.git/config', 'a\\b', 'a\nb', 'a\rb', '"bad'):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 snapshot.safe_path(bad)
 

@@ -41,9 +41,26 @@ history or remote. It verifies blob IDs and the resulting tree; it rejects
 symlinks, submodules, unsupported names and oversized inputs. A clean/dirty
 control and the Requests base `ca15d4808734c86801c8f3d80c9152c35a163dc3`
 matched Git tree `ed5a1585a8be3af46f525730afb5db31b3825812` with 149 files.
+The earlier `git add` approach failed on the Modin base because attributes
+changed five blobs. The helper now hashes files with filters disabled and
+constructs the index from verified blobs. Requests, DVC and Modin base trees
+matched in local controls; a CRLF fixture and a Modin patch round-trip retained
+the expected bytes. It rejects filenames incompatible with its line-based Git
+input rather than silently modifying them.
 This helper does not isolate the workspace or implement the agent runner.
 The caller must create and protect the workspace and clean up on errors. It
 may reject other benchmark bases, which must not be silently omitted.
+
+`scripts/arcade/candidate.py` is a preliminary independent patch-capture helper.
+It examines file contents rather than relying on the agent's Git metadata,
+rejects unsafe filesystem entries, reconstructs a patch using a separate index
+and verifies its round-trip tree. It can materialize the captured bytes for a
+guard and recheck their hash. The caller must stop the agent and tools first,
+protect the temporary directories and run the guard on that capture. Repeated
+scans do not prevent a same-user adversary from changing and restoring files
+between checks; neither helper is a benchmark driver.
+On the real Modin base, a synthetic change to a CRLF file was captured, applied
+to a separate base workspace and compared byte-for-byte with the candidate.
 
 `scripts/arcade/prepare_predictions.py --manifest MANIFEST --records PATCHES
 --output PREDS_JSON` exports completed Codex patches to the existing evaluator's
