@@ -1,6 +1,9 @@
 # ARCADE-Agent on SWE-EVO: results
 
-**Status: pre-run protocol; no experiment results yet.** Full inference and evaluation require separate approval after the cost estimate. No cells below represent measured outcomes. The protocol and analysis described here still require implementation and validation before the full run.
+**Status: pre-run protocol; no experiment results yet.** The owner approved
+local execution first. The full run remains subject to a resource estimate and
+the protocol's required checks; report the estimate before proceeding as the
+owner requested. No cells below represent measured outcomes.
 
 ## Scope and paired comparison
 
@@ -21,6 +24,8 @@ Contracts must be produced from each task's base revision before inference, froz
 The owner chose repository-evidenced rules only: absence of a dependency in the
 base does not make a new dependency a violation. Recovered graphs describe the
 observed structure; they do not establish the maintainers' intended rules.
+The owner also selected ARCADE-only for the intervention: repository-native
+Ruff controls are evidence for investigation, not part of the pilot guard.
 
 ## Results by repository
 

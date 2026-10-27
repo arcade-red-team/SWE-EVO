@@ -230,6 +230,10 @@ SWE-EVO image, test, benchmark or performance validation. Validate the actual
 image, architecture, available storage and worker concurrency on the execution
 host, and record image pull, CPU and memory costs. The evaluator labels images
 x86_64; do not assume an ARM run is equivalent.
+The DVC candidate image was pulled locally at manifest digest
+`sha256:ec5529447ac44ca5836d4b9fbf5a86eaa869dd5ca4c5e2601aaedffe89a4101b`;
+Docker reports `linux/amd64` and size 1,377,277,308 bytes. Pulling and
+inspecting an image does not establish that its evaluator or tests work.
 
 Keep credentials outside the repository and pass them through the environment;
 only public benchmark data and approved experiment artifacts may leave the

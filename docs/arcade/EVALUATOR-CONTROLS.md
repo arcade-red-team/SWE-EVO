@@ -115,6 +115,16 @@ semantics is unproven, log text can be spoofed by tested code, and the image
 uses a randomly generated certificate and is not yet portably reproducible.
 The adapter, collection data and gold-bearing logs remain local.
 
+A local diagnostic wrapper now checks the candidate patch separately against
+the pinned base before combining it with the test patch. A malformed candidate
+is rejected as unscorable instead of being silently ignored. After pinning the
+local evaluator sources and helpers, repeated gold and empty controls retained
+the same 113 target statuses and suite totals. The wrapper re-collects tests
+after applying each candidate, but it is not the upstream evaluator and does
+not make the fixture image reproducible or prevent test code from spoofing
+log output. The source, logs and evaluator-only fields remain outside the
+agent workspace.
+
 The local derived image IDs for the pytest 7 controls were
 `sha256:66b065d28b65aaa27e319edbf4a5670f5673b67566bc2780a9c753fbafce40d5`
 and `sha256:be467e0f6cc8e6511deb2b5684ab955635d874167a2609df04f345321c829fe0`.
