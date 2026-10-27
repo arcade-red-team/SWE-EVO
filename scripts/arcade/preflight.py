@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Read-only checks for the published SWE-EVO OpenHands workflow."""
+
+import json
+import subprocess
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+BASE_COMMIT = "9b83d5af943ba7a17567336f5b18239f73960219"
+EXPECTED_INSTANCES = 48
+
+
+def command(args: list[str], root: Path) -> tuple[bool, str]:
+    try:
+        result = subprocess.run(
+            args, cwd=root, capture_output=True, text=True, timeout=10, check=False
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, str(exc)
+    return result.returncode == 0, result.stdout.strip()
+
+
+def check(root: Path) -> list[tuple[str, bool, str]]:
+    results = []
+    inference = root / "OpenHands/evaluation/benchmarks/swe_bench/scripts/run_infer.sh"
+    results.append(("OpenHands inference script", inference.is_file(), str(inference)))
+
+    dataset = root / "hf_out/hf_jsonl"
+    dataset_files = (
+        [path for path in dataset.rglob("*.jsonl") if path.is_file() and path.stat().st_size]
+        if dataset.is_dir() else []
+    )
+    results.append(("OpenHands JSONL dataset", bool(dataset_files), str(dataset)))
+
+    evaluator = root / "SWE-bench/evaluate_instance.py"
+    results.append(("SWE-EVO evaluator", evaluator.is_file(), str(evaluator)))
+    inputs = root / "output_final"
+    files = sorted(inputs.glob("*.json")) if inputs.is_dir() else []
+    ids = set()
+    invalid = 0
+    for path in files:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            instance_id = data.get("instance_id")
+            if not isinstance(instance_id, str) or not instance_id:
+                raise ValueError("missing instance_id")
+            ids.add(instance_id)
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError, AttributeError):
+            invalid += 1
+    inputs_ok = len(files) == EXPECTED_INSTANCES and len(ids) == EXPECTED_INSTANCES and not invalid
+    results.append((
+        "Evaluator instance JSON count and unique IDs", inputs_ok,
+        f"{inputs}: {len(files)} files, {len(ids)} unique IDs, {invalid} invalid; "
+        f"expected {EXPECTED_INSTANCES}",
+    ))
+
+    base_ok, _ = command(["git", "merge-base", "--is-ancestor", BASE_COMMIT, "HEAD"], root)
+    results.append(("Pinned SWE-EVO base ancestor", base_ok, BASE_COMMIT))
+
+    docker_ok, platform = command(
+        ["docker", "version", "--format", "{{.Server.Os}}/{{.Server.Arch}}"], root
+    )
+    # Images in the benchmark are x86-64. An ARM daemon may emulate them, but
+    # this read-only check cannot establish that emulation actually works.
+    platform_ok = docker_ok and platform == "linux/amd64"
+    results.append(("Docker server (native linux/amd64)", platform_ok, platform or "unavailable"))
+    return results
+
+
+def main() -> int:
+    results = check(ROOT)
+    for label, passed, detail in results:
+        print(f"{'PASS' if passed else 'MISSING/UNVERIFIED'} {label}: {detail}")
+    print("NOT VERIFIED: authoritative instance identities and fields, guard integration, "
+          "frozen contracts, seed acceptance, image contents, model access, runtime "
+          "and evaluator end-to-end. This preflight cannot establish readiness.")
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
