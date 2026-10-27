@@ -119,6 +119,13 @@ below apply to the linked exact revisions and cited scope only.
   import-time cycle. Two seven-case runs matched after excluding elapsed time.
   This is a scoped canary, not a faithful enforceable contract or a claim that
   the repository approves those cases.
+  A separate local ARCADE prototype recognized the direct, alias and class-body
+  examples as lexical violations while marking the clean and ambiguous cases
+  unscorable. Fifteen prototype tests, including in-process MCP and schema
+  checks, passed. The prototype intentionally cannot return PASS: import-time
+  behavior and full-workspace coverage remain unproven, and it has not been
+  integrated into the experiment's MCP or submission boundary. It is not a
+  frozen contract or an experiment result.
 - **scikit-learn: import syntax and test boundaries.** At both
   [`55bf5d93e5674f13a1134d93a11fd0cd11aabcd1`](https://github.com/scikit-learn/scikit-learn/blob/55bf5d93e5674f13a1134d93a11fd0cd11aabcd1/doc/developers/contributing.rst#L648-L656)
   and [`b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab`](https://github.com/scikit-learn/scikit-learn/blob/b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab/doc/developers/contributing.rst#L753-L761),
