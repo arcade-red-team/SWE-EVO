@@ -69,10 +69,13 @@ class GuardTest(unittest.TestCase):
         baseline = result_forbidden()
         candidate = copy.deepcopy(baseline)
         candidate["violations"][0]["id"] = "forbidden-dependency:57"
-        self.assertEqual(self.decide(baseline, candidate).status, "accept")
+        self.assertEqual(self.decide(baseline, candidate).status, "unscorable")
+        candidate["component_edges"][-1]["count"] += 1
+        self.assertEqual(self.decide(baseline, candidate).status, "unscorable")
         candidate["violations"].append(copy.deepcopy(candidate["violations"][0]))
         candidate["errors"] = 2
         self.assertEqual(self.decide(baseline, candidate).status, "unscorable")
+        self.assertEqual(self.decide(baseline, CLEAN).status, "accept")
 
     def test_suppressed_forbidden_finding_fails_closed(self):
         candidate = result_forbidden()

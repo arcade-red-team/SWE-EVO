@@ -77,6 +77,8 @@ coverage is unscorable. The function relies on caller-supplied snapshot hashes,
 repair count and coverage evidence: it does not itself bind MCP to the tree,
 prove isolation, call Codex, or enforce a submission boundary. The eventual
 driver must pin the entire ARCADE runtime, not just this checked source file.
+Persistent baseline findings are also unscorable: component-level aggregation
+can hide a newly introduced underlying dependency on the same component pair.
 
 `scripts/arcade/recovery_probe.py` examines one clean source checkout at an
 explicit base SHA, checks the ARCADE source tree hash, and compares two cold

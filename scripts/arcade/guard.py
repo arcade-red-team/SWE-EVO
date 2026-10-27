@@ -244,6 +244,10 @@ def decide(base: Any, candidate: Any, contract: bytes, base_binding: Binding,
         after = _findings(candidate, parsed_spec, semantics)
     except (AttributeError, TypeError, ValueError, UnicodeError, OSError, ImportError) as error:
         return Decision("unscorable", str(error))
+    if before.keys() & after.keys():
+        # MCP aggregates violations by component pair or SCC, so a persistent
+        # finding may hide a different or additional underlying dependency.
+        return Decision("unscorable", "persistent baseline findings lack entity-level identity")
     introduced = tuple(sorted((after - before).elements()))
     if not introduced:
         return Decision("accept", "no new supported contract violations")

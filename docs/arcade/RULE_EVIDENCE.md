@@ -25,7 +25,7 @@ methods, not an exhaustive assessment of every rule:
 | scikit-learn | 2 | Complete GitHub tree listings plus selected files at each base. |
 
 The Dask/DVC scan matched selected architecture/import phrases in source and
-configuration files; tests were excluded except for Dask's `test_base.py`.
+configuration files; a follow-up also inspected import-related tests.
 Other reviews used selected source, documentation and configuration files. A
 missing match does not prove that the repository has no rule. The examples
 below apply to the linked exact revisions and cited scope only.
@@ -46,7 +46,20 @@ below apply to the linked exact revisions and cited scope only.
   symbol passed, while a planted `from funcy import cached_property` produced
   `TID251` using that version and configuration. This symbol-specific rule is
   not shown to be expressible by the current component-level ARCADE guard;
-  the Ruff control does not substitute for an ARCADE guard test.
+  the Ruff control does not substitute for an ARCADE guard test. The same base
+  deliberately imports that symbol in its wrapper with a
+  [`noqa: TID251` exception](https://github.com/iterative/dvc/blob/84b2e685e25c31fc1296d2902c728d84785a656d/dvc/utils/objects.py#L6),
+  so even a symbol checker must preserve the repository's exception semantics.
+  A follow-up scan found `test_no_remote_imports` in 22 of the 26 DVC bases;
+  for example, [this test](https://github.com/iterative/dvc/blob/84b2e685e25c31fc1296d2902c728d84785a656d/tests/unit/test_imports.py#L5)
+  verifies optional remote modules remain unloaded after a CLI import. That
+  transitive runtime behavior is not an unconditional static edge ban. Four
+  other bases lacked a matching test or rule within the scanned scope; this
+  does not establish that no other policy exists there. Fifteen DVC bases
+  disable pylint `cyclic-import`; one
+  [explains the check is noisy for function-local imports](https://github.com/iterative/dvc/blob/35e0dd920614f9f1194c82f61eeaa829f6593fb6/.pylintrc#L168-L170).
+  Report observed cycles as a metric; do not treat every cycle as a
+  repository-supported violation.
 - **Pydantic: local and import-time behavior.** At base
   [`e131d53a07da080c2ba642775efa9e81cb2cf0ba`](https://github.com/pydantic/pydantic/blob/e131d53a07da080c2ba642775efa9e81cb2cf0ba/pydantic/_migration.py#L259-L260),
   a local import is explicitly used to avoid a circular import. At the separate
@@ -54,7 +67,11 @@ below apply to the linked exact revisions and cited scope only.
   a cached helper delays importing `annotated_types` until needed. These
   examples are about *when* an import happens. A blanket ban on the corresponding
   component dependency could reject the documented local import; do not infer
-  such a ban without a tested scope-aware representation.
+  such a ban without a tested scope-aware representation. At the latter base,
+  [`tests/test_exports.py`](https://github.com/pydantic/pydantic/blob/7af856a1098406aea84bcadfd0f3de6b7901526c/tests/test_exports.py#L32-L103)
+  also checks public exports and lazy loading, while a public module
+  [legitimately imports `_internal`](https://github.com/pydantic/pydantic/blob/7af856a1098406aea84bcadfd0f3de6b7901526c/pydantic/fields.py#L20).
+  A blanket public-to-internal edge ban would misrepresent those tests.
 - **Requests: optional dependency policy.** At base
   [`0192aac24123735b3eaf9b08df46429bb770c283`](https://github.com/psf/requests/blob/0192aac24123735b3eaf9b08df46429bb770c283/docs/user/advanced.rst#L705-L713),
   the documentation describes `chardet` as optional for Python 3 and mandatory
@@ -68,7 +85,10 @@ below apply to the linked exact revisions and cited scope only.
   [`d54dcfd8e4cceecdbf818a48bbc712854dda906e`](https://github.com/modin-project/modin/blob/d54dcfd8e4cceecdbf818a48bbc712854dda906e/docs/development/architecture.rst#L80-L88))
   describes the pandas API, query compiler and dataframe relationship. The
   description supports architectural context, not a blanket prohibition on
-  reverse imports or on dependencies missing from the baseline.
+  reverse imports or on dependencies missing from the baseline. A comment at
+  [`groupby.py:477–478`](https://github.com/modin-project/modin/blob/22ce95e78b4db2f21d5940cbd8ee656e7e565d15/modin/core/dataframe/algebra/groupby.py#L477-L478)
+  also directs a local import to avoid a cycle; it does not ban that dependency
+  at all scopes.
 - **scikit-learn: import syntax and test boundaries.** At both
   [`55bf5d93e5674f13a1134d93a11fd0cd11aabcd1`](https://github.com/scikit-learn/scikit-learn/blob/55bf5d93e5674f13a1134d93a11fd0cd11aabcd1/doc/developers/contributing.rst#L648-L656)
   and [`b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab`](https://github.com/scikit-learn/scikit-learn/blob/b7b4d3e2f1a65bcb6d40431d3b61ed1d563c9dab/doc/developers/contributing.rst#L753-L761),
@@ -83,6 +103,15 @@ below apply to the linked exact revisions and cited scope only.
   imports. The repository also shows [`conans.*` imports](https://github.com/conan-io/conan/blob/4614b3abbff15627b3fabdd98bee419721f423ce/.github/CONTRIBUTING.md#L101-L111)
   in its own contributing guide. The checker scope needs confirmation before
   treating it as a project-wide rule.
+  A separate [FIXME on one test-file import](https://github.com/conan-io/conan/blob/4614b3abbff15627b3fabdd98bee419721f423ce/conans/test/integration/command/upload/syncronize_test.py#L4)
+  is narrower and is already violated at both inspected bases. With tests
+  included, a probe detected this edge; planting a second import between the
+  same files increased its aggregated edge count from 2 to 3 but produced the
+  same component-pair finding. The earlier decision code incorrectly returned
+  `accept`. It now treats persistent baseline findings as unscorable because
+  aggregated findings cannot identify the underlying new dependency. The probe
+  used synthetic coverage and binding values to exercise the decision only;
+  it did not establish real coverage or an enforceable Conan contract.
 
 Where no evidenced rule can be faithfully enforced, record the task as
 unscorable for the guard comparison rather than adding a guessed rule. Existing
